@@ -1,0 +1,6 @@
+bin/data.rosinstall
+bin/data.yml
+bin/Vpy27
+*.pyc
+test/__pycache__
+deploy/__pycache__

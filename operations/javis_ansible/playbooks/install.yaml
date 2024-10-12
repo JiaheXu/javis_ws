@@ -1,0 +1,28 @@
+
+- include: misc/pre_run_checks.yaml
+- include: deploy/clean_up_old_configurations.yaml
+
+- include: facts/platform_facts.yaml
+- include: facts/setup_vars.yaml
+- include: facts/payload_facts.yaml
+
+- include: deploy/python_scripts_uninstall.yaml
+
+- include: misc/base_setup.yaml
+- include: misc/anydesk.yaml
+
+
+- include: misc/ros.yaml
+- include: misc/docker.yaml
+- include: misc/docker_tools.yaml
+- include: misc/docker_nvidia.yaml
+
+- include: deploy/payload_tools.yaml
+# - include: misc/azure.yaml
+# # - include: misc/docker_tools.yaml
+# - include: misc/docker_nvidia.yaml
+
+- include: deploy/python_scripts_install.yaml
+- include: deploy/launch_setup_install.yaml
+- include: deploy/local_conf.yaml
+

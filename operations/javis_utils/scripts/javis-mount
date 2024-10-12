@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+__dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+eval "$(cat $__dir/../../javis_utils/scripts/header.sh)"
+eval "$(cat $__dir/../../javis_utils/scripts/formatters.sh)"
+
+if chk_flag --help $@ || chk_flag help $@ || chk_flag -h $@ || chk_flag -help $@; then
+    echo "TODO: help..."
+    echo " mount other hosts to this one..."
+    exit_success
+fi
+
+# //////////////////////////////////////////////////////////////////////////////
+# @brief run the ansible robot playbook
+# //////////////////////////////////////////////////////////////////////////////
+
+host=$1
+if [[ -z $host ]]; then
+    echo "do better"
+    exit 1
+fi
+
+echo Mounting $host
+
+remote_log_dir=$(ssh $host "/bin/bash -c \"source ~/.javis/auto/javis_redirect.bash && echo \\\$JAVIS_LOGGING_DIR\"")
+mkdir -p ~/logging/$host
+sshfs $host:$remote_log_dir ~/logging/$host

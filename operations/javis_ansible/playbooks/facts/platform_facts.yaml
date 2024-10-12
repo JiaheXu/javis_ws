@@ -1,0 +1,126 @@
+# This book is for reading in payload information if it exists and setting
+# facts for the payload settings for hte rest of the ansible playbooks to use
+#
+# Facts that will be created:
+# 
+- name: Set platform facts
+  gather_facts: no
+  hosts: all
+
+  tasks:
+    - name: Get Ubuntu Codename
+      shell: lsb_release -c -s
+      register: lsb_release_codename
+
+    - name: Register Ubuntu Codename Varibale
+      set_fact:
+        ubuntu_release: "{{ lsb_release_codename.stdout }}"
+
+    - name: Get Architecture
+      shell: uname -m
+      register: uname_m
+
+    - name: Register Ubuntu Codename Varibale
+      set_fact:
+        arch_type: "{{ uname_m.stdout }}"
+
+    - name: Set Simple Arch to x86
+      set_fact:
+        simplifed_arch_type: "x86"
+      when: "{{'x86' in arch_type}}"
+  
+    - name: Set Simple Arch to arm
+      set_fact:
+        simplifed_arch_type: "arm"
+      when: "{{'x86' not in arch_type}}"
+
+    - name: Get hostname From File
+      slurp:
+        src: /etc/hostname
+      register: etc_hostname_slurp
+
+    - name: Set hostname Fact
+      set_fact:
+        hostname: "{{ (etc_hostname_slurp['content'] | b64decode)[:-1] }}"
+
+    - name: Run Whoami to get the user name
+      command: whoami
+      register: whoami
+
+    - name: Set username fact
+      set_fact:
+        username: "{{ whoami.stdout }}"
+
+    - name: Check nvidia-smi (errors here are totally normal)
+      shell: nvidia-smi
+      ignore_errors: yes
+      register: nvidia_smi_output
+
+    - name: Check tegrastats (errors here are totally normal)
+      shell: tegrastats --help
+      ignore_errors: yes
+      register: tegrastats_output
+
+    - name: Set gpu_installed [true]
+      set_fact:
+        gpu_installed: true
+      when: nvidia_smi_output.rc == 0 or tegrastats_output.rc == 0
+
+    - name: Set gpu_installed [false]
+      set_fact:
+        gpu_installed: false
+      when: nvidia_smi_output.rc != 0 and tegrastats_output.rc != 0
+
+    - name: Set jetson_orin [true]
+      set_fact:
+        jetson_orin: true
+      when: tegrastats_output.rc == 0
+
+    - name: Set jetson_orin [false]
+      set_fact:
+        jetson_orin: false
+      when: tegrastats_output.rc != 0
+
+    - name: Set javis_arch_type to unknown
+      set_fact:
+        javis_arch_type: "Invalid"
+    
+    - name: Set javis_arch_type to x86-non-gpu
+      set_fact:
+        javis_arch_type: "x86-non-gpu"
+      when: not gpu_installed and arch_type == "x86_64"
+
+    - name: Set javis_arch_type to x86-nvidia-gpu
+      set_fact:
+        javis_arch_type: "x86-nvidia-gpu"
+      when: gpu_installed and arch_type == "x86_64"
+
+    - name: Set javis_arch_type to arm-tegra-gpu
+      set_fact:
+        javis_arch_type: "arm-tegra-gpu"
+      when: jetson_orin and arch_type == "aarch64"
+
+    - name: Check javis_arch_type invalid
+      fail:
+        msg: "Invalid hardware configuration {{ arch_type }}, {{ 'gpu installed' if gpu_installed else 'no gpu' }}{{ ', jetson orin' if jetson_orin else ''}}"
+      when: javis_arch_type == "Invalid"
+
+    - name: Get NV Tegra Release Info
+      slurp:
+        src: /etc/nv_tegra_release
+      register: nv_tegra_release
+      when: jetson_orin
+
+    - name: Set NV Tegra Release Fact ITM
+      set_fact:
+        nv_tegra_release_data_itm: "{{ (nv_tegra_release['content'] | b64decode)[2:-1].split(',') }}"
+      when: jetson_orin
+
+    - name: Set payload_l4t_version
+      set_fact:
+        l4t_version: "{{ nv_tegra_release_data_itm[0] + nv_tegra_release_data_itm[1] }}"
+      when: jetson_orin
+
+    - name: Platform information debug
+      debug:
+        msg: "{{ username }}@{{ hostname }}: {{ ubuntu_release }}, {{ arch_type }}, {{ 'gpu' if gpu_installed else 'non-gpu' }}{{ ', jetson orin' if jetson_orin else '' }}, {{ javis_arch_type }}"

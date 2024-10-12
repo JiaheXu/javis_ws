@@ -1,0 +1,39 @@
+# Sets up /etc/javis
+- name: Setup Global Configuration
+  gather_facts: no
+  hosts: all
+
+  tasks:    
+    - name: Remove javis-icon.png
+      file:
+        path: ~/.icons/javis-icon.png
+        state: absent
+
+    - name: Remove javis_stop.desktop
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+      - ~/.local/share/applications/javis.desktop
+      - ~/.local/share/applications/javis_stop.desktop
+      - ~/.local/share/applications/javis_launch_file.desktop
+      - ~/.local/share/applications/javis_launch_payloads.desktop
+      - ~/.local/share/applications/javis_stop_payloads.desktop
+      - ~/.local/share/applications/javis_sync_payloads.desktop
+
+    - name: Remove javis.xml
+      file:
+        path: ~/.local/share/mime/packages/javis.xml
+        state: absent
+
+    - name: Remove Default Application Type
+      lineinfile:
+        dest: ~/.config/mimeapps.list
+        state: absent
+        regex: 'application/javis-launch=javis_launch_file.desktop'
+  
+    - name: Update mime database
+      shell: update-mime-database ~/.local/share/mime
+
+    - name: Update desktop database
+      shell: update-desktop-database ~/.local/share/applications

@@ -1,0 +1,121 @@
+# The tmux session name, has to be unique
+session_name: pt_start
+
+# Add commands to bash history
+suppress_history: false
+
+# set environment variables
+environment:
+  robot: ${robot}
+
+# starting directory location, to run all commands from
+start_directory: $JAVIS_PATH/
+
+# commands to run before panes startup
+before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -ar -st -- javis_autonomy javis_estimation javis_drivers javis_common
+
+# This is where we list all the stuff we want to run
+windows:
+  - window_name: roscore
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roscore
+
+  - window_name: drivers
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_drivers
+        - roslaunch --wait javis_drivers_core joy.launch
+      - shell_command:
+        - docker-join.bash -n javis_drivers
+        - roslaunch --wait javis_drivers_core pilot.launch
+      - shell_command:
+        - docker-join.bash -n javis_drivers
+        - roslaunch --wait javis_drivers_core drivers_test.launch
+            launch_cameras:=false
+            launch_joy:=false
+      - shell_command:
+        - docker-join.bash -n javis_drivers
+        - roslaunch --wait image_sharing send_gstreamer.launch
+
+  - window_name: estimation
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_estimation
+        - roslaunch --wait javis_estimation_core estimation.launch
+            voxel_size:=0.2
+            use_super_odometry:=true
+            launch_rc_vio:=false
+            
+
+  - window_name: autonomy
+    focus: true
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_autonomy
+        - roslaunch --wait javis_autonomy_core test.launch 2> >(grep -v TF_REPEATED_DATA buffer_core)
+      - shell_command:
+        - docker-join.bash -n javis_autonomy
+        - roslaunch --wait javis_autonomy_core planners.launch 2> >(grep -v TF_REPEATED_DATA buffer_core)
+      - shell_command:
+        - docker-join.bash -n javis_autonomy
+        - roslaunch --wait javis_autonomy_core behavior.launch 2> >(grep -v TF_REPEATED_DATA buffer_core)
+      - shell_command:
+        - docker-join.bash -n javis_autonomy
+        - roslaunch --wait javis_autonomy_core local.launch 2> >(grep -v TF_REPEATED_DATA buffer_core)
+      - shell_command:
+        - docker-join.bash -n javis_autonomy
+        - roslaunch --wait javis_autonomy_core far.launch 2> >(grep -v TF_REPEATED_DATA buffer_core)
+      - shell_command:
+        - docker-join.bash -n javis_autonomy
+        - roslaunch --wait javis_autonomy_core ilqr.launch 2> >(grep -v TF_REPEATED_DATA buffer_core)
+      - shell_command:
+        - docker-join.bash -n javis_autonomy
+        - roslaunch --wait tare_planner explore_indoor.launch
+
+        
+  # comms manager
+  - window_name: comms manager
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roslaunch --wait communication_manager communication_manager.launch
+      #- shell_command:
+      #  - docker-join.bash -n javis_common
+      #  - roslaunch --wait communication_manager mpu5_query.launch
+
+  # #Stair Detection
+  # - window_name: Stair Detection
+  #   focus: false
+  #   layout: main-horizontal
+  #   panes:
+  #     - shell_command:
+  #       - docker-join.bash -n javis_common
+  #       - roslaunch --wait staircase_manager stair_detector.launch
+  
+  # - window_name: autocalib
+  #   focus: false
+  #   layout: main-horizontal
+  #   panes:
+  #     - shell_command:
+  #       - docker-join.bash -n javis_common
+  #       - mon launch autocalib javis_robot_autocalib.launch
+
+  - window_name: logging
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - sleep 5
+        - javis-log --log-dir /logging --date-folder

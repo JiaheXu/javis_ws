@@ -1,0 +1,36 @@
+# Sets up /etc/javis
+- name: Setup Global Configuration
+  gather_facts: no
+  hosts: all
+
+  tasks:
+    - name: Enable host info server
+      become: true
+      shell: sudo hit enable
+
+    - name: Check for javis_system_id variable
+      fail:
+        msg: javis_system_id is not defined
+      when: javis_system_id is not defined
+    
+    - name: Check for javis_system_component variable
+      fail:
+        msg: javis_system_component is not defined
+      when: javis_system_component is not defined
+
+    - name: Check for javis_system_type variable
+      fail:
+        msg: javis_system_type is not defined
+      when: javis_system_type is not defined
+
+    - debug:
+        msg: "{{ javis_system_id }}.{{ javis_system_component }} {{ javis_system_type }}"
+
+    - name: Set JAVIS_SYSTEM_ID to {{ javis_system_id }}
+      shell: "hit params set JAVIS_SYSTEM_ID {{ javis_system_id }}"
+
+    - name: Set JAVIS_SYSTEM_COMPONENT to {{ javis_system_component }}
+      shell: "hit params set JAVIS_SYSTEM_COMPONENT {{ javis_system_component }}"
+
+    - name: Set JAVIS_SYSTEM_TYPE to {{ javis_system_type }}
+      shell: "hit params set JAVIS_SYSTEM_TYPE {{ javis_system_type }}"

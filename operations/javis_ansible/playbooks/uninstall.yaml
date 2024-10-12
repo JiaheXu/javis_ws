@@ -1,0 +1,11 @@
+
+- include: misc/pre_run_checks.yaml
+- include: deploy/clean_up_old_configurations.yaml
+- include: facts/platform_facts.yaml
+- include: facts/setup_vars.yaml
+- include: facts/payload_facts.yaml
+
+- include: deploy/python_scripts_uninstall.yaml
+- include: deploy/uninstall_conf.yaml
+- include: deploy/launch_setup_uninstall.yaml
+

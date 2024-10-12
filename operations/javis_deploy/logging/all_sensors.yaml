@@ -1,0 +1,8 @@
+topics:
+- imu/data
+- velodyne_packets
+- /thermal/image
+- /camera_image0
+- /camera_image1
+- /camera_image2
+- /camera_image3

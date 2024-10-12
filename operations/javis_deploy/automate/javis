@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+
+# load header helper functions
+GL_CMPL_DIR=$JAVIS_OPERATIONS/javis_deploy/automate/
+. $JAVIS_OPERATIONS/javis_deploy/automate/cmpl/completion.sh
+. $JAVIS_OPERATIONS/javis_deploy/automate/cmpl/help.sh
+
+if [ ! -z "$ZSH_NAME" ]; then
+  # bash-completion under zsh
+  autoload bashcompinit
+  bashcompinit
+
+  autoload -Uz compinit
+  compinit
+
+  # remove fuzzy search in zsh-completion
+  zstyle ":completion:*" matcher-list ''
+fi
+
+# @brief evaluate which subcommand to switch and execute
+__subt_git_execute() {
+  # TODO: check if has -p or -v for preview and verbose
+  local _opts=""
+  chk_flag -p $@ && _opts="$_opts -p"
+  chk_flag -v $@ && _opts="$_opts -v"
+
+  if chk_flag reset $@; then
+    shift 2
+    for cmd in "$@"; do
+      chk_flag -p $cmd || chk_flag -v $cmd && continue
+      deployer "git.$cmd.reset" "$_opts"
+    done
+
+  elif chk_flag rm $@; then
+    shift 2
+    for cmd in "$@"; do
+      chk_flag -p $cmd || chk_flag -v $cmd && continue
+      deployer "git.$cmd.rm" "$_opts"
+    done
+
+  elif chk_flag clean $@; then
+    shift 2
+    for cmd in "$@"; do
+      chk_flag -p $cmd || chk_flag -v $cmd && continue
+      deployer "git.$cmd.clean" "$_opts"
+    done
+
+  elif chk_flag pull $@; then
+    shift 2
+    for cmd in "$@"; do
+      chk_flag -p $cmd || chk_flag -v $cmd && continue
+      deployer "git.$cmd.pull" "$_opts"
+    done
+
+  elif chk_flag status $@ || chk_flag sync $@  || chk_flag add $@; then
+    shift 1
+    ($GL_CMPL_DIR/git.bash $@)
+
+  elif chk_flag help $@; then
+    __git_help
+  fi
+}
+
+# //////////////////////////////////////////////////////////////////////////////
+# @brief 'git javis' wrapper entrypoint
+# //////////////////////////////////////////////////////////////////////////////
+javis() {
+
+  # execute the deployer's git books
+  # if chk_nth_flag 1 "git" "$@"; then
+  #   __subt_git_execute $@
+
+  # execute any deployer's git books (section given as user input)
+  if chk_nth_flag 1 "deployer" "$@"; then
+    shift 1 # shift 'deployer'
+    deployer -s $@
+
+  elif chk_nth_flag 1 "sync" "$@"; then
+    shift 1
+
+    javis-sync $@
+  elif chk_nth_flag 1 "launch" "$@"; then
+    shift 1
+
+    javis-launch $@
+  elif chk_nth_flag 1 "install" "$@"; then
+    shift 1
+
+    javis-install $@
+
+  elif chk_nth_flag 1 "hosts" "$@"; then
+    shift 1
+
+    javis-hosts $@
+
+  elif chk_nth_flag 1 "log" "$@"; then
+    shift 1
+
+    javis-log $@
+
+  fi
+}
+
+# enable tab autocompletion
+# 'nosort' option does not work with bash <= 4.4.20 (https://lists.defectivebydesign.org/archive/html/bug-bash/2017-05/msg00034.html)
+complete -o nospace -o nosort -F _ac_javis_completion javis

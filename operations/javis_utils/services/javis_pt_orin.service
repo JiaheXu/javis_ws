@@ -1,0 +1,12 @@
+[Unit]
+Description=javis launch on pt orin
+
+[Service]
+Type=simple
+User=javis
+ExecStart=/bin/bash -c "source ~/.javis/auto/javis_redirect.bash && javis launch"
+RemainAfterExit=true
+ExecStop=/bin/bash -c "source ~/.javis/auto/javis_redirect.bash && javis stop"
+
+[Install]
+WantedBy=multi-user.target

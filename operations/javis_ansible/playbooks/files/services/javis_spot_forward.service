@@ -1,0 +1,12 @@
+[Unit]
+Description=Foward Spot Traffic
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/socat TCP-LISTEN:8124,fork TCP:192.168.50.3:80
+Restart=always
+TimeoutSec=60
+
+[Install]
+WantedBy=multi-user.target

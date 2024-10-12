@@ -1,0 +1,14 @@
+#############################################################
+# Required Environment Variables:
+# - CATKIN_DIR: location of javis_common src directory
+# OPTIONAL Environment Variable:
+# - CATKIN_PROFILE: catkin profile to build with
+#############################################################
+- '[ ! -z "$CATKIN_DIR" ] || ( echo "ERROR: CATKIN_DIR not set" && exit 1 )'
+- echo "Working in [$CATKIN_DIR]"
+- '[ ! -e $CATKIN_DIR/.catkin_tools/profiles/$CATKIN_PROFILE/build.yaml ] || rm $CATKIN_DIR/.catkin_tools/profiles/$CATKIN_PROFILE/build.yaml'
+- '[ ! -e $CATKIN_DIR/.catkin_tools/profiles/profiles.yaml ] || rm $CATKIN_DIR/.catkin_tools/profiles/profiles.yaml'
+- '[ ! -z "$CATKIN_PFOILE" ] || catkin profile -w $CATKIN_DIR list'
+- '[ ! -z "$CATKIN_PFOILE" ] || catkin profile -w $CATKIN_DIR set $CATKIN_PROFILE'
+- catkin config -w $CATKIN_DIR
+- catkin build -w $CATKIN_DIR --force-cmake

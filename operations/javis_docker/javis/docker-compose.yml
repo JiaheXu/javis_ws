@@ -1,0 +1,163 @@
+version: '2.3'
+services:
+  # ////////////////////////////////////////////////////////////////////////////
+  # Basic JAVIS Service (Rviz, generally shared code, a little sim code for viz)
+  # ////////////////////////////////////////////////////////////////////////////
+  javis_common:
+    image: javis/${JAVIS_ARCH_T}.ros.${JAVIS_ROS_DISTRO}:${DOCKER_IMAGE_VERSION}
+    build:
+      # docker build context
+      context: ${JAVIS_DOCKER_PATH}/javis/
+      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/${JAVIS_ROS_DISTRO}.dockerfile
+    extends:
+      service: base
+    container_name: javis_common
+    environment:
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/devel/javis_common/setup.bash
+      - SET_ROS2=false
+    volumes:
+      - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
+      - /tmp/argus_socket:/tmp/argus_socket
+      - /tmp:/tmp
+    devices:
+      - /dev/i2c-8:/dev/i2c-8
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
+      - /dev/video3:/dev/video3
+      - /dev/video4:/dev/video4
+      - /dev/video5:/dev/video5
+      - /dev/video6:/dev/video6
+    ipc: "host"
+
+
+  # ////////////////////////////////////////////////////////////////////////////
+  # JAVIS Autonomy Service (exploration, planner, etc...)
+  # ////////////////////////////////////////////////////////////////////////////
+  javis_autonomy:
+    image: javis/${JAVIS_ARCH_T}.autonomy:${DOCKER_IMAGE_VERSION}
+    build:
+      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/autonomy.dockerfile
+      context: ${JAVIS_DOCKER_PATH}/javis/
+    extends:
+      service: base
+    container_name: javis_autonomy
+    environment:
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/devel/javis_autonomy/setup.bash
+      - SET_ROS2=false
+
+
+  # ////////////////////////////////////////////////////////////////////////////
+  # drivers service (motor drivers / imu / velodyne / etc...)
+  # ////////////////////////////////////////////////////////////////////////////
+  javis_drivers:
+    image: javis/${JAVIS_ARCH_T}.drivers:${DOCKER_IMAGE_VERSION}
+    build:
+      context: ${JAVIS_DOCKER_PATH}/javis/
+      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/drivers.dockerfile
+    extends:
+      service: base
+    container_name: javis_drivers
+    environment:
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/devel/javis_drivers/setup.bash
+      - SET_ROS2=false    
+    volumes:
+      - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
+      - /tmp/argus_socket:/tmp/argus_socket
+      - /tmp:/tmp
+    devices:
+      - /dev/i2c-8:/dev/i2c-8
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
+      - /dev/video3:/dev/video3
+      - /dev/video4:/dev/video4
+      - /dev/video5:/dev/video5
+      - /dev/video6:/dev/video6
+    ipc: "host"
+
+  # ////////////////////////////////////////////////////////////////////////////
+  # state estimation service (loam / super odometry / etc...)
+  # ////////////////////////////////////////////////////////////////////////////
+  javis_estimation:
+    image: javis/${JAVIS_ARCH_T}.state_estimation:${DOCKER_IMAGE_VERSION}
+    build:
+      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/estimation.dockerfile
+      context: ${JAVIS_DOCKER_PATH}/javis/
+    extends:
+      service: base
+    container_name: javis_estimation
+    #privileged: true
+    #ulimits:
+    #  nice: 40
+    environment:
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/devel/javis_estimation/setup.bash
+      - SET_ROS2=false
+    volumes:
+      - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
+      - /tmp/argus_socket:/tmp/argus_socket
+      - /tmp:/tmp
+    devices:
+      - /dev/i2c-8:/dev/i2c-8
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
+      - /dev/video3:/dev/video3
+      - /dev/video4:/dev/video4
+      - /dev/video5:/dev/video5
+      - /dev/video6:/dev/video6
+    ipc: "host"
+  # ////////////////////////////////////////////////////////////////////////////
+  # Simulation stuff!! (should be a stand in replacement for drivers / state estimation)
+  # ////////////////////////////////////////////////////////////////////////////
+  javis_sim:
+    image: javis/${JAVIS_ARCH_T}.sim:${DOCKER_IMAGE_VERSION}
+    build:
+      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/sim.dockerfile
+      context: ${JAVIS_DOCKER_PATH}/javis/
+    extends:
+      service: base
+    container_name: javis_sim
+    privileged: true
+    environment:
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/devel/javis_sim/setup.bash
+      - SET_ROS2=false
+
+
+  javis_ros2:
+    image: javis/${JAVIS_ARCH_T}.ros2:${DOCKER_IMAGE_VERSION}
+    build:
+      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/ros2.dockerfile
+      context: ${JAVIS_DOCKER_PATH}/javis/
+    extends:
+      service: ros2_base
+    container_name: javis_ros2
+    privileged: true
+    environment:
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/src/javis_ros2/install/setup.bash
+      - SET_ROS2=True
+    volumes:
+      - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra
+      - /usr/src/jetson_multimedia_api:/usr/src/jetson_multimedia_api
+      - /usr/src/jetson_multimedia_api/argus:/usr/src/jetson_multimedia_api/argus
+      - /etc/nv_tegra_release:/etc/nv_tegra_release
+      # - /boot/dtb/kernel_tegra234-p3701-0000-p3737-0000.dtb:/boot/dtb/kernel_tegra234-p3701-0000-p3737-0000.dtb
+      - /external/dds_install/:/home/developer/dds_install/
+      - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
+      - /tmp/argus_socket:/tmp/argus_socket
+      - /tmp:/tmp
+      - /var/nvidia/nvcam/settings/:/var/nvidia/nvcam/settings/
+      - /etc/systemd/system:/etc/systemd/system
+      - /etc/udev/rules.d/:/etc/udev/rules.d/
+    # runtime: nvidia
+    devices:
+      - /dev/i2c-8:/dev/i2c-8
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
+      - /dev/video3:/dev/video3
+      - /dev/video4:/dev/video4
+      - /dev/video5:/dev/video5
+      - /dev/video6:/dev/video6
+    ipc: "host"
+

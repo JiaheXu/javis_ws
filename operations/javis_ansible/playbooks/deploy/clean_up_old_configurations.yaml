@@ -1,0 +1,22 @@
+# Sets up ~/.javis
+- name: Setup Local Configuration
+  gather_facts: no
+  hosts: all
+
+  tasks:
+    - name: "Remove old deploy.conf"
+      file:
+        path: "~/.javis/deploy.conf"
+        state: absent
+
+
+    - name: "Remove old install.conf"
+      file:
+        path: "~/.javis/install.conf"
+        state: absent
+
+
+    - name: "Remove old redirect conf"
+      file:
+        path: "~/.javis/redirect.conf"
+        state: absent

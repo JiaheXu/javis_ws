@@ -1,0 +1,55 @@
+# Sets up /etc/javis
+- name: Setup Global Configuration
+  gather_facts: no
+  hosts: all
+
+  tasks:
+    - name: Disable host info server (might fail but that's cool)
+      become: true
+      shell: hit disable
+      ignore_errors: True
+
+    - name: Stat deploy conf
+      stat:
+        path: "{{ javis.deploy_conf }}"
+      register: deploy_conf_stat
+
+    - name: Check for local install
+      fail:
+        msg: Local Install must be installed first
+      when: not deploy_conf_stat.stat.exists
+
+    - name: "Create {{ javis.global_conf | dirname }}"
+      file:
+        path: "{{ javis.global_conf | dirname }}"
+        state: directory
+        mode: '0755'
+      become: true
+
+    - name: "Create {{ javis.global_conf }}"
+      template:
+        src: ../files/global.conf
+        dest: "{{ javis.global_conf }}"
+      become: true
+
+    - name: "Create {{ javis.payload_conf }}"
+      template:
+        src: ../files/payload.conf
+        dest: "{{ javis.payload_conf }}"
+      become: true
+      when: payload_serial != "None"
+
+    - name: Enable host info server
+      become: true
+      shell: sudo hit enable
+
+    - name: Touch ~/.ssh/config
+      file:
+        path: ~/.ssh/config
+        state: touch
+
+    - name: Add ~/.ssh/javis.d/*.config to ~/.ssh/config
+      lineinfile:
+        dest: ~/.ssh/config
+        insertbefore: BOF
+        line: "Include ~/.ssh/javis.d/*.config"

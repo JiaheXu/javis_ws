@@ -1,0 +1,50 @@
+---
+# ////////////////////////////////////////////////////////////////////////
+# setup & install azure cli & terraform tools
+# ////////////////////////////////////////////////////////////////////////
+- name: Localhost Setup
+  hosts: all
+  gather_facts: false
+  vars_files:
+  - ../../config/install_options.yaml
+
+    # az cli does not work on arm yet: https://github.com/MicrosoftDocs/azure-docs-cli/issues/1326
+    # TODO: arm run this: curl -L https://aka.ms/InstallAzureCli | bash
+    # right now, use az, not docker context: read -sp "Azure password: " AZ_PASS && echo && az login -u kat@smash0190hotmail.onmicrosoft.com -p $AZ_PASS
+
+  # ////////////////////////////////////////////////////////////////////////
+  # Tasks to execute
+  # ////////////////////////////////////////////////////////////////////////
+  tasks:
+    - name: Warn ARM Anydesk
+      fail:
+        msg: "Cannot install anydesk on ARM :("
+      ignore_errors: true
+      when: install_anydesk and "x86" not in arch_type
+
+    - name: Install Ubuntu Prerequisite Packages
+      become: true
+      apt:
+        name: [ca-certificates, curl, lsb-release, gnupg, unzip, wget]
+        state: present
+        force_apt_get: yes
+      when: install_anydesk and "x86" in arch_type
+  
+    - name: Add anydesk keys
+      become: true
+      shell: wget -qO - https://keys.anydesk.com/repos/DEB-GPG-KEY | apt-key add -
+      when: install_anydesk and "x86" in arch_type
+
+    - name: Install anydesk
+      become: true
+      apt:
+        update_cache: yes
+        name: [anydesk]
+      when: install_anydesk and "x86" in arch_type
+
+    - name: Set anydesk password
+      become: true
+      shell: "echo {{ anydesk_password }} | anydesk --set-password"
+      when: install_anydesk and set_anydesk_password and "x86" in arch_type
+
+    

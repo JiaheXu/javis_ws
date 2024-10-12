@@ -1,0 +1,14 @@
+# Let NetworkManager manage all devices on this system
+network:
+    version: 2
+    renderer: NetworkManager
+    ethernets:
+        eth0{ check ifconfig for basestation}:
+            addresses:
+                - 10.3.1.{$number}/16
+            nameservers:
+                addresses: [8.8.8.8,8.8.4.4]
+            gateway4: 10.3.0.1
+            routes:
+              - to: 224.0.0.0/4
+                via: 0.0.0.0

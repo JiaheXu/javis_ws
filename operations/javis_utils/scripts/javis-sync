@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+__dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+eval "$(cat $__dir/../../javis_utils/scripts/header.sh)"
+eval "$(cat $__dir/../../javis_utils/scripts/formatters.sh)"
+
+if [[ ! -z $JAVIS_OPERATIONS ]]; then
+    DEFAULT_CONFIG=$JAVIS_OPERATIONS/javis_deploy/workspace_config.yaml
+fi
+
+if chk_flag --help $@ || chk_flag help $@ || chk_flag -h $@ || chk_flag -help $@; then
+    title "$__file_name <options> -- < systems >"
+    text "    uses rsync to sync the workspace on other hosts"
+    text
+    text "Options:"
+    text "    --list        : list sync options"
+    text "    --sync <sync> : select a sync option which defines what files to sync"
+    text "    --watch       : watch for filesystem changes to determine when to sync"
+    text
+    text "Other Options:"
+    text "  --payloads               : rather than specifying hosts, automatically select all connected javis payloads"
+    text "  --connected              : rather than specifying hosts, automatically select all connected javis hosts"
+    text "  --ws-path <path>         : specify the javis path to use explicitly rather than figuring it out over ssh"
+    text "  --config <config files>  : use a different config file than the default"
+    text
+    text "  --dry                    : dry run (print commands but don't run)"
+    text
+    text "    systems         : comma delimited names of the systems to install on"
+    text "                      if none are provided it will default to localhost,"
+    text
+    text "NOTE: when running on multiple systems they must all have the same sudo password"
+    text "      and when no ssh keys are setup, the same user and password are required too"
+    text "For more help, please see the README.md or wiki."
+    exit_success
+fi
+
+# //////////////////////////////////////////////////////////////////////////////
+# @brief run the ansible robot playbook
+# //////////////////////////////////////////////////////////////////////////////
+
+system_names=""
+if chk_flag --connected $@ ; then
+    javis_names=$(javis-hosts complete_helper)
+    if ! last_command_failed; then
+        system_names=$javis_names
+    fi
+elif chk_flag --payloads $@ ; then
+    javis_names=$(javis-hosts complete_helper --payloads)
+    if ! last_command_failed; then
+        system_names=$javis_names
+    fi
+else
+    sidx=$(($(get_idx -- $@) + 2))
+    if ! last_command_failed; then
+        for name in "${@:$sidx}"; do
+            system_names="$name $system_names"
+        done
+    fi
+fi
+if [[ -z $system_names ]]; then
+    error "Please specify a target system"
+    exit 1
+fi
+
+SYNC="default"
+if chk_flag --sync $@; then
+    idxs=$(getidx --sync $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ -z $val ]] || [[ ${val:0:1} == "-" ]]; then
+        echo "Invalid username: [$val]"
+        exit 1
+    fi
+    SYNC=$val
+fi
+
+CONFIG=""
+if chk_flag --config $@; then
+    idxs=$(getidx -config $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ -z $val ]] || [[ ${val:0:1} == "-" ]]; then
+        echo "Invalid config: [$val]"
+        exit 1
+    fi
+    CONFIG=$val
+fi
+if [[ -z $CONFIG ]]; then
+    CONFIG=$DEFAULT_CONFIG
+fi
+
+WS_PATH=""
+if chk_flag --ws-path $@; then
+    idxs=$(getidx --ws-path $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ -z $val ]] || [[ ${val:0:1} == "-" ]]; then
+        echo "Invalid username: [$val]"
+        exit 1
+    fi
+    WS_PATH=$val
+fi
+
+DRY=false
+if chk_flag --dry $@ ; then
+    DRY=true
+fi
+
+WATCH=false
+if chk_flag --watch $@ ; then
+    WATCH=true
+fi
+
+
+default_sync=$(cat $CONFIG | shyaml get-value sync.default 2> /dev/null)
+
+# Nothing else to do so just list and exit
+if chk_flag --list $@; then
+    list_options=$(cat $CONFIG | shyaml keys sync)
+    echo "Sync Options:"
+    for option in $list_options; do
+        if [[ $option == $default_sync ]]; then
+            printf "  %-10s (default)\n" $option
+        else
+            printf "  %-10s\n" $option
+        fi
+    done
+    exit 1
+fi
+
+if [[ $SYNC == "default" ]]; then
+    if [[ -z $default_sync ]]; then
+        error "Default sync not able to be figured out..."
+        exit 1
+    fi
+    SYNC=$default_sync
+fi
+
+keys_check=$(cat $CONFIG | shyaml keys sync.configs.$SYNC 2> /dev/null)
+if [[ -z $keys_check ]]; then
+    error "Sync $SYNC not found in config."
+    exit 1
+fi
+
+excludes_len=$(cat $CONFIG | shyaml get-length sync.configs.$SYNC.excludes 2> /dev/null)
+includes_len=$(cat $CONFIG | shyaml get-length sync.configs.$SYNC.includes 2> /dev/null)
+
+if [ -z $excludes_len ] || [ -z $includes_len ]; then
+    error "Having issues reading config."
+    exit 1
+fi
+excludes_opts=""
+includes_opts=""
+for i in $(seq 0 $(($excludes_len - 1))); do
+    exclude_i=$(cat $CONFIG | shyaml get-value sync.configs.$SYNC.excludes.$i 2> /dev/null)
+    excludes_opts="$excludes_opts --exclude=$exclude_i"
+done
+for i in $(seq 0 $(($includes_len - 1))); do
+    include_i=$(cat $CONFIG | shyaml get-value sync.configs.$SYNC.includes.$i 2> /dev/null)
+    includes_opts="$includes_opts --include=$include_i"
+done
+misc_options=$(cat $CONFIG | shyaml get-value sync.configs.$SYNC.options 2> /dev/null)
+#echo here
+function perform_sync() {
+    echo here
+    for host in $system_names; do
+        remote_ws_path=$WS_PATH
+        if [ -z $WS_PATH ]; then
+            remote_ws_path=$(ssh $host "/bin/bash -c \"source ~/.javis/auto/javis_redirect.bash && echo \\\$JAVIS_PATH\"")
+        fi
+        if [[ -z $remote_ws_path ]]; then
+            warning "Unable to retrieve workspace root on $host, cannot sync"
+            continue
+        fi
+
+        main "Syncing to $host"
+        rcsync_to_command="rsync $misc_options $includes_opts $excludes_opts $JAVIS_PATH/* $host:/external/javis_ugv"
+        if [[ $DRY == true ]]; then
+            debug "-- Dry Run --"
+            echo $rcsync_to_command
+        else
+            $rcsync_to_command
+        fi
+    done
+    echo
+    debug "Sync to $system_names completed"
+}
+
+perform_sync
+if [[ $WATCH == true ]]; then
+    debug "Watching workspace src/ operations/ docs/"
+    while [ true ]; do
+        cd $JAVIS_PATH
+        inotifywait -e modify,attrib,move,create,delete -r src/ operations/ docs/ 2> /dev/null
+        perform_sync
+    done
+fi

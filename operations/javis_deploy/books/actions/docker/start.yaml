@@ -1,0 +1,4 @@
+- '[ ! -z "$DOCKER_COMPOSE_EXTEND" ] || ( echo "ERROR: DOCKER_COMPOSE_EXTEND not set" && exit 1 )'
+- '[ ! -z "$SERVICE" ] || ( echo "ERROR: SERVICE not set" && exit 1 )'
+- cd $JAVIS_DOCKER_PATH
+- docker-compose -f docker-compose.yml -f javis/docker-compose.yml -p $SERVICE up --force-recreate -d $SERVICE

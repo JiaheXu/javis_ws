@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+__dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+eval "$(cat $__dir/../../javis_utils/scripts/header.sh)"
+eval "$(cat $__dir/../../javis_utils/scripts/formatters.sh)"
+
+if chk_flag --help $@ || chk_flag help $@ || chk_flag -h $@ || chk_flag -help $@; then
+    echo "Exports environment variables for ROS"
+    exit 0
+fi
+
+if [ -z $1 ]; then
+    echo "Please provide an argument for what host you want to source"
+    exit 0
+fi
+
+unset ROS_IP
+unset ROS_HOSTNAME
+export ROS_MASTER_URI=http://$1:11311

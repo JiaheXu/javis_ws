@@ -1,0 +1,54 @@
+# This book is for reading in payload information if it exists and setting
+# facts for the payload settings for hte rest of the ansible playbooks to use
+#
+# Facts that will be created:
+# 
+- name: Set Payload Facts
+  gather_facts: no
+  hosts: all
+
+  tasks:
+    - name: Check for /etc/payload/type
+      stat:
+        path: /etc/payload/type
+      register: etc_payload_type
+
+    - name: Get /etc/payload/type contents
+      slurp:
+        src: /etc/payload/type
+      register: payload_type_file
+      when: etc_payload_type.stat.exists
+
+    - name: Set Payload type Fact (Exists)
+      set_fact:
+        payload_type: "{{ (payload_type_file['content'] | b64decode)[:-1] }}"
+      when: etc_payload_type.stat.exists
+    
+    - name: Set Payload type fact (Doesn't Exist)
+      set_fact:
+        payload_type: "None"
+      when: not etc_payload_type.stat.exists
+
+    - name: Check for /etc/payload/serial
+      stat:
+        path: /etc/payload/serial
+      register: etc_payload_serial
+
+    - name: Get /etc/payload/serial contents
+      slurp:
+        src: /etc/payload/serial
+      register: payload_serial_file
+      when: etc_payload_serial.stat.exists
+
+    - name: Set Payload serial Fact (Exists)
+      set_fact:
+        payload_serial: "{{ (payload_serial_file['content'] | b64decode)[:-1] }}"
+      when: etc_payload_serial.stat.exists
+    
+    - name: Set Payload serial fact (Doesn't Exist)
+      set_fact:
+        payload_serial: "None"
+      when: not etc_payload_serial.stat.exists
+
+    - debug:
+        msg: "Payload type: {{ payload_type }}, serial: {{ payload_serial }}"

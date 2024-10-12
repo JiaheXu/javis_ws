@@ -1,0 +1,55 @@
+# This book is to retreive setup vars from the environment
+# and set them as vars for use during installation
+- name: Get JAVIS Facts
+  gather_facts: no
+  hosts: all
+
+  tasks:
+
+    - name: Check for old javis redirect.bash
+      stat:
+        path: "~/.javis/javis_redirect.bash"
+      register: javis_redirect_bash_old_stat
+
+    - name: Get JAVIS_PATH (OLD)
+      shell: "/bin/bash -c 'source ~/.javis/javis_redirect.bash > /dev/null && echo $JAVIS_PATH'"
+      register: javis_path_env_out
+      when: javis_redirect_bash_old_stat.stat.exists
+
+    - name: Check for javis redirect.bash
+      stat:
+        path: "~/.javis/auto/javis_redirect.bash"
+      register: javis_redirect_bash_stat
+
+    - name: Get JAVIS_PATH
+      shell: "/bin/bash -c 'source ~/.javis/auto/javis_redirect.bash > /dev/null && echo $JAVIS_PATH'"
+      register: javis_path_env_out
+      when: javis_redirect_bash_stat.stat.exists
+
+    - name: Set JAVIS_PATH
+      set_fact:
+        javis_path: "{{ javis_path_env_out.stdout }}"
+      when: javis_path is not defined and javis_redirect_bash_stat.stat.exists
+
+    - name: Set More JAVIS Facts
+      set_fact:
+        javis:
+          global_conf: "/etc/javis/javis.conf"
+          payload_conf: "/etc/javis/payload.conf"
+          deploy_conf: "~/.javis/auto/deploy.conf"
+          install_conf: "~/.javis/auto/install.conf"
+          redirect_bash: "~/.javis/auto/javis_redirect.bash"
+          # Reset these
+          global_conf_path: "{{ lookup('env', 'JAVIS_GLOBAL_CONF_PATH') }}"
+          global_version: "{{ lookup('env', 'JAVIS_GLOBAL_VERSION') }}"
+          major_epoch: "{{ lookup('env', 'JAVIS_MAJOR_EPOCH') }}"
+          major_version: "{{ lookup('env', 'JAVIS_MAJOR_VERSION') }}"
+          minor_version: "{{ lookup('env', 'JAVIS_MINOR_VERSION') }}"
+          maintainer: "{{ lookup('env', 'JAVIS_MAINTAINER') }}"
+
+    - name: Set local JAVIS Path
+      set_fact:
+        local_javis_path: "{{ lookup('env', 'JAVIS_PATH') }}"
+
+    - debug:
+        var: javis

@@ -1,0 +1,390 @@
+#!/usr/bin/env python3
+import host_info_tools as hit
+from host_info_tools import argparse as hit_ap
+from host_info_tools import message_interface as hit_mi
+import os
+import sys
+import math
+import time
+import yaml
+import shlex
+import jinja2
+import subprocess
+import fnmatch
+
+ssh_config_template = """
+
+Host {{ hostname }}
+    Hostname {{ hostname }}
+    User {{ username }}
+    StrictHostKeyChecking no
+    IdentitiesOnly yes
+    IdentityFile {{ keyfile_path }}
+    Port 22
+
+Host {{ designator }}
+    Hostname {{ hostname }}
+    User {{ username }}
+    StrictHostKeyChecking no
+    IdentitiesOnly yes
+    IdentityFile {{ keyfile_path }}
+    Port 22
+
+"""
+
+def filter_javis_hosts(hosts):
+    """
+    filter for hosts that have attributes necessary for adoption
+    """
+    result = []
+    for host in hosts:
+        if "params" not in host:
+            continue
+        if host["params"] is None:
+            # print(host["hostname"] + " has invalid params section. Restart host info tools on both devices to fix.")
+            continue
+        if "JAVIS_SYSTEM_ID" not in host["params"]:
+            continue
+        if "JAVIS_SYSTEM_COMPONENT" not in host["params"]:
+            continue
+        if "JAVIS_HOST_USER" not in host["params"]:
+            continue
+        result.append(host)
+    return result
+
+def get_host_config(host):
+    info = host["params"]
+
+    result = {
+        "hostname": host["hostname"],
+        "username": info["JAVIS_HOST_USER"],
+        "designator":  "%s.%s"%(info["JAVIS_SYSTEM_ID"], info["JAVIS_SYSTEM_COMPONENT"]),
+        "system_type": info["JAVIS_SYSTEM_TYPE"],
+        "system_component": info["JAVIS_SYSTEM_COMPONENT"],
+        "keyfile_path": kp,
+        "last_update": host["last_update"]
+    }
+    if "JAVIS_PAYLOAD_TYPE" in info:
+        result["payload_type"] = info["JAVIS_PAYLOAD_TYPE"]
+    return result
+
+def print_table(col_titles, row_data, title = None):
+    if len(row_data) == 0:
+        raise Exception("No rows...")
+    if len(col_titles) != len(row_data[0]):
+        raise Exception("Must be as many titles as columns.")
+    col_lens = []
+    for col_title in col_titles:
+        col_lens.append(len(col_title))
+    for row in row_data:
+        for i in range(len(col_lens)):
+            col_lens[i] = max(len(row[i]), col_lens[i])
+    format_string = ""
+    for col_len in col_lens:
+        format_string += "%%-%ds "%(col_len+1)
+
+    col_title = format_string%tuple(col_titles)
+    if title is not None:
+        if len(title) + 2 > len(col_title):
+            print(title)
+        else:
+            buffer = len(col_title) - 2 - len(title)
+            print("%s %s %s"%("-"*int(buffer/2), title, "-"*int((buffer +1)/2)))
+    print(col_title)
+    print("-"*len(col_title))
+    for row in row_data:
+        print(format_string%tuple(row))
+
+
+
+home_dir = os.path.expanduser("~")
+default_ssh_directory = os.path.join(home_dir, ".ssh", "javis.d")
+default_config_path = os.path.join(default_ssh_directory, "hosts.yaml")
+
+
+if __name__ == "__main__":
+    ap = hit_ap.Arguments(["ssh-dir", "config", "i", "p", "pass", "regex"])
+    ap.parse_arguments(sys.argv[1:])
+    ssh_directory = ap.get_flag_value(["ssh-dir"], default_ssh_directory)
+    config_path = ap.get_flag_value(["config"], default_config_path)
+    default_pass = ap.get_flag_value(["pass"])
+
+    kw = ap.get_arg_at(0, "list")
+    help_flag = ap.get_flag_boolean(["h", "help"])
+    if help_flag or kw == "-h" or kw == "--help":
+        print("javis-robots")
+        print("     used to manage interactions with javis hosts.")
+        print("Usage:")
+        print("  javis-robots [opts] <keyword>")
+        print("Keywords:")
+        print("  list                           : list available javis hosts")
+        print("  adopt <hosts, default: all>    : used to accept a host as deployable from this system ")
+        print("  forget <host>                  : forget a host that has been previously seen / deployable ")
+        print("")
+        print("Options:")
+        print("  --ssh-dir : path to directory where the ssh config should be placed")
+        print("              default - %s"%default_ssh_directory)
+        print("  --config  : path to config files where a list of hosts is kept")
+        print("              default - %s"%default_config_path)
+        print("  --pass <password> : when adopting hosts, use this password.")
+    else:
+
+        host_list = None
+        local_config = None
+
+        local_config_changed = False
+
+        try:
+            if not os.path.exists(ssh_directory):
+                os.mkdir(ssh_directory)
+            if not os.path.exists(os.path.split(config_path)[0]):
+                os.mkdir(os.path.split(config_path)[0])
+
+            server_name = ap.get_flag_value(["i"], "127.0.0.1")
+            server_port = int(ap.get_flag_value(["p"], 6753))
+            host_list = None
+            try:
+                client = hit_mi.Client(server_name, server_port)
+                client.invalidateParamsCache()
+                host_list = client.getHostList()
+            except Exception as err:
+                print(err)
+
+            local_config = None
+            if os.path.exists(config_path):
+                try:
+                    with open(config_path, 'r') as f:
+                        local_config = yaml.load(f, Loader=yaml.FullLoader)
+                except Exception as err:
+                    pass
+
+
+            no_jog = ap.get_flag_boolean(["jog"])
+            kp = os.path.join(ssh_directory, "id_rsa_javis")
+            if not os.path.exists(kp) and not no_jog:
+                yn = input("Cannot find id_rsa_javis in %s\nWould you like to generate it now? [Y/n]: "%ssh_directory)
+                if yn == "Y" or yn == "y" or yn == "":
+                    subprocess.check_output(shlex.split("ssh-keygen -f %s -P \"\""%kp))
+
+        except Exception as err:
+            print("Error loading hosts: %s"%str(err))
+            exit(0)
+
+
+        if host_list is None and local_config is None:
+            print("Unable to load hosts from info server nor local config.")
+            exit(0)
+
+        if host_list is None:
+            host_list = {}
+        else:
+            filter_list = filter_javis_hosts(host_list)
+            host_list = {}
+            for h in filter_list:
+                cfg = get_host_config(h)
+                host_list[cfg["hostname"]] = cfg
+
+        if local_config is None:
+            local_config = {}
+
+        connected_locals = {}
+
+        idx = 0
+        for host in list(host_list.keys()):
+            if host in local_config:
+                connected_locals[host] = host_list.pop(host)
+                local_desig = local_config[host]["designator"]
+                host_desig = connected_locals[host]["designator"]
+                if local_desig != host_desig:
+                    # print("Automatically changing %s -> %s"%(local_desig, host_desig))
+                    j_template = jinja2.Template(ssh_config_template)
+                    r = j_template.render(connected_locals[host])
+                    new_config_path = os.path.join(ssh_directory, "%s.config"%connected_locals[host]["hostname"])
+                    with open(new_config_path, "w+") as new_config_file:
+                        new_config_file.write(r)
+                    local_config[host] = connected_locals[host]
+                    local_config_changed = True
+
+        ###################
+        # KW Processing
+        ###################
+        if kw == "list":
+            if len(local_config) > 0:
+
+                col_titles = ["Hostname", "System Alias", "Status"]
+                rows = []
+                for name in local_config:
+                    cfg = local_config[name]
+                    if name in connected_locals:
+                        cfg = connected_locals[name]
+                    desig = cfg["designator"]
+                    age = time.time() - cfg["last_update"]
+                    connected = math.fabs(age) < 1.5
+                    rows.append([name, desig, "Connected (%3.1f)"%age if connected else "Disconnected (%3.1f)"%age])
+                if len(local_config) > 0:
+                    rows = sorted(rows, key=lambda row: row[0])
+                    print_table(col_titles, rows, title = "Adopted JAVIS Hosts")
+                    print("")
+
+            if len(host_list) > 0:
+                columns = ["Hostname", "System Alias", "Status"]
+
+                data = []
+                for name in host_list:
+                    cfg = host_list[name]
+                    desig = cfg["designator"]
+                    age = time.time() - cfg["last_update"]
+                    connected = math.fabs(age) < 1.5
+
+                    data.append([name, desig, "Connected (%3.1f)"%age if connected else "Disconnected (%3.1f)"%age])
+                if len(data) > 0:
+                    data = sorted(data, key=lambda row: row[0])
+                    print_table(columns, data, title = "Available JAVIS Hosts")
+
+
+        elif kw == "adopt":
+            host = ap.get_arg_at(1, "javis*")
+            hosts = []
+            hosts.extend(host_list.keys())
+            hosts.extend(connected_locals.keys())
+
+            hosts = fnmatch.filter(hosts, host)
+
+            def adopt_host(host_cfg):
+                j_template = jinja2.Template(ssh_config_template)
+                r = j_template.render(host_cfg)
+                new_config_path = os.path.join(ssh_directory, "%s.config"%host_cfg["hostname"])
+                print("Generating [%s] for %s"%(new_config_path, host_cfg["hostname"]))
+                with open(new_config_path, "w+") as new_config_file:
+                    new_config_file.write(r)
+
+                password = default_pass
+                if password is None:
+                    password = input("Copying ssh-key [%s] to %s, please enter password: "%(kp, host_cfg["hostname"]))
+                else:
+                    print("Copying ssh-key [%s] to %s"%(kp, host_cfg["hostname"]))
+
+                if password == "":
+                    print("Skipping host %s since password is empty"%host_cfg["hostname"])
+                else:
+                    try:
+                        subprocess.check_output(shlex.split("sshpass -p %s ssh-copy-id -o StrictHostKeyChecking=no -i %s %s@%s"%(
+                            password,
+                            kp,
+                            host_cfg["username"],
+                            host_cfg["hostname"]
+                        )))
+
+                        try:
+                            subprocess.check_output(shlex.split("docker context create %s --description \"Connect over ssh to %s\" --docker \"host=ssh://%s\""%(
+                                host_cfg["hostname"],
+                                host_cfg["hostname"],
+                                host_cfg["hostname"]
+                            )))
+                        except:
+                            pass
+
+                        local_config[host_cfg["hostname"]] = host_cfg
+                    except Exception as err:
+                        print("Unable to add %s - %s, skipping."%(host_cfg["hostname"], str(err)))
+
+                print("")
+
+            for host in hosts:
+                if len(hosts) > 1 and host == os.uname()[1]:
+                    print("Skipping %s unless it is the only one requested."%os.uname()[1])
+                    continue
+                if host in connected_locals:
+                    print("!!! Re-adopting host %s !!!"%host)
+                    adopt_host(connected_locals[host])
+                    local_config_changed = True
+                elif host in host_list:
+                    print("!!! Adopting new host %s !!!"%host)
+                    adopt_host(host_list[host])
+                    local_config_changed = True
+                elif host in local_config:
+                    print("Cannot re-adopt host %s, it is not connected."%host)
+                else:
+                    print("Unable to adopt unknown host %s"%host)
+                    continue
+
+        elif kw == "forget":
+            host = ap.get_arg_at(1, "all")
+            hosts = []
+
+            if host == "all":
+                hosts.extend(local_config.keys())
+            else:
+                hosts.extend([host])
+
+
+            for host in hosts:
+                if host not in local_config:
+                    print("Unable to forget host %s"%host)
+                    continue
+                host_cfg = local_config[host]
+                cur_config_path = os.path.join(ssh_directory, "%s.config"%host_cfg["hostname"])
+                if os.path.exists(cur_config_path):
+                    os.remove(cur_config_path)
+
+                try:
+                    subprocess.check_output(shlex.split("docker context rm %s"%host_cfg["hostname"]), capture_output=True)
+                except:
+                    pass
+                print("Forgetting %s"%host)
+                local_config.pop(host)
+                local_config_changed = True
+        elif kw == "complete_helper":
+            javis_hosts = ap.get_flag_boolean(["javis"])
+            payload_hosts = ap.get_flag_boolean(["payloads"])
+            localhost = ap.get_flag_boolean(["include-local"])
+            comma_delim = ap.get_flag_boolean(["comma-delim"])
+
+            def output_list(rlist):
+                if comma_delim:
+                    print(",".join(rlist))
+                else:
+                    print(" ".join(rlist))
+
+            def intersect_list(base, add):
+                res = []
+                if base is None:
+                    for r in add:
+                        res.append(r)
+                else:
+                    print(base)
+                    print(add)
+                    for r in add:
+                        if r in base:
+                            res.append(r)
+                return res
+
+            localhost_name = os.uname()[1]
+            base = []
+            for k in connected_locals:
+                age = time.time() - connected_locals[k]["last_update"]
+                connected = math.fabs(age) < 1.5
+                if connected:
+                    base.append(k)
+            res = []
+            if javis_hosts:
+                res = fnmatch.filter(base, "javis*")
+            elif payload_hosts:
+                for b in base:
+                    if "payload_type" in connected_locals[b]:
+                        res.append(b)
+            else:
+                res = base
+            if not localhost:
+                if localhost_name in res:
+                    res.remove(localhost_name)
+            output_list(res)
+
+        else:
+            print("Unknown keyword: %s"%kw)
+
+        if local_config_changed:
+            with open(config_path, "w+") as config_file:
+                config_file.write(yaml.dump(local_config))
+            subprocess.check_output(shlex.split("generate_icons.py"))
+

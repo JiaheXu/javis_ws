@@ -1,0 +1,14 @@
+- pwd
+
+- nested:
+  - ls
+  - +extend: nested/test3
+  - ls -all
+
+- testing:
+  - echo "hello"
+  - foo:
+    - ls -all
+
+- running:
+  - whoami

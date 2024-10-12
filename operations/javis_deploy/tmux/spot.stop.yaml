@@ -1,0 +1,28 @@
+# The tmux session name, has to be unique
+session_name: pt_stop
+
+# Add commands to bash history
+suppress_history: true
+
+# starting directory location, to run all commands from
+start_directory: $JAVIS_PATH/
+
+windows:
+  - window_name: stop pt
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - echo "trying to stop session"
+        # "cleanly" stop the rosbag recording
+        - javis log --stop
+        # Stop the drocker containers
+        - $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -- javis_autonomy javis_estimation javis_drivers javis_common
+        # stop all tmux sessions
+        - tmux kill-session -t pt_start
+        # stop any argus services
+        - pkill -f nvarguscamerasrc
+        # self destroy does not work on older tmuxp
+        - sleep 2
+        - tmux kill-session -t pt_stop
+

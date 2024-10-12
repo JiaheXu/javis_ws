@@ -1,0 +1,129 @@
+---
+# ////////////////////////////////////////////////////////////////////////
+# setup & install nvidia-docker
+# ////////////////////////////////////////////////////////////////////////
+- name: nvidia-docker setup
+  hosts: all
+  gather_facts: False
+  vars_files:
+  - ../../config/install_options.yaml
+
+  # ////////////////////////////////////////////////////////////////////////
+  # Tasks to execute
+  # ////////////////////////////////////////////////////////////////////////
+  tasks:
+
+  # ////////////////////////////////////////////////////////////////////////
+  # NVIDIA Docker
+  # ////////////////////////////////////////////////////////////////////////
+  - name: check nvidia-smi installed
+    shell: nvidia-smi
+    ignore_errors: yes
+    register: nvidia_smi_output
+
+  # change some default parameters in the VMS
+  - name: Set Nvidia Daemon Variable
+    set_fact:
+      install_nvidia_docker: false
+    when: nvidia_smi_output.rc != 0
+
+  - name: Warn ARM Nvidia-Docker
+    fail:
+      msg: "Cannot install nvidia-docker on arm (comes pre-installed)"
+    ignore_errors: true
+    when: install_nvidia_docker and "x86" not in arch_type
+
+
+  - name: remove previous nvidia-docker manual install
+    become: true
+    shell: docker volume ls -q -f driver=nvidia-docker | xargs -r -I{} -n1 docker ps -q -a -f volume={} | xargs -r docker rm -f
+    ignore_errors: yes
+    when: install_nvidia_docker and "x86" in arch_type
+
+  - name: remove previous nvidia-docker apt install
+    become: true
+    apt:
+      name: "nvidia-docker"
+      state: present
+      force_apt_get: yes
+    ignore_errors: yes
+    when: install_nvidia_docker and "x86" in arch_type
+
+  - name: update apt packages
+    become: true
+    apt:
+      update_cache: yes
+    when: install_nvidia_docker and "x86" in arch_type
+
+  # - name: install docker dependency packages
+  #   become: true
+  #   apt:
+  #     name: ["docker-ce", "docker-ce-cli", "containerd.io"]
+  #     state: present
+  #     force_apt_get: yes
+  #   when: install_nvidia_docker and "x86" in arch_type
+
+  - name: add official GPG key of nvidia docker
+    become: true
+    shell: curl -fsSL https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+    when: install_nvidia_docker and "x86" in arch_type
+
+  - name: save the current Ubuntu release version
+    shell: . /etc/os-release;echo $ID$VERSION_ID
+    register: distribution
+    when: install_nvidia_docker and "x86" in arch_type
+
+  - name: update apt packages with nvidia docker
+    become: true
+    shell: curl -s -L https://nvidia.github.io/nvidia-docker/{{ distribution.stdout }}/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list
+    when: install_nvidia_docker and "x86" in arch_type
+
+  - name: update apt packages
+    become: true
+    apt:
+      update_cache: yes
+    when: install_nvidia_docker and "x86" in arch_type
+
+  - name: install nvidia-docker
+    become: true
+    apt:
+      name: "nvidia-docker2"
+      state: present
+      force_apt_get: yes
+    when: install_nvidia_docker and "x86" in arch_type
+
+  - name: Check for daemon.json
+    stat:
+      path: /etc/docker/daemon.json
+    register: docker_daemon_stat
+    when: install_docker
+  
+  - name: Create default daemon.json
+    template:
+      src: ../files/docker_daemon.json
+      dest: /etc/docker/daemon.json
+    become: true
+    when: install_docker and not docker_daemon_stat.stat.exists
+
+  - name: Add nvidia runtime to docker daemon
+    become: true
+    shell: "jq '.\"runtimes\".\"nvidia\" = {\"path\": \"nvidia-container-runtime\", \"runtimeArgs\":[] }' /etc/docker/daemon.json > /tmp/daemon.json.new && mv /tmp/daemon.json.new /etc/docker/daemon.json"
+    when: install_nvidia_docker and "x86" in arch_type
+
+  - name: restart docker service
+    become: true
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      name: docker
+    when: install_nvidia_docker and "x86" in arch_type
+
+  - name: validate nvidia-docker
+    shell: nvidia-docker --version
+    register: docker_version_out
+    when: install_nvidia_docker
+
+  - name: output validate docker
+    debug:
+      msg: "Container Output: {{docker_version_out.stdout}}"
+    when: install_nvidia_docker

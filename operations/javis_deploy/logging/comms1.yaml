@@ -1,0 +1,8 @@
+topics:
+- distributedMapping/globalDescriptors
+- distributedMapping/loopInfo_compressed
+- distributedMapping/optimizationState
+- distributedMapping/rotationEstimateState
+- distributedMapping/poseEstimateState
+- distributedMapping/neighborRotationEstimates
+- distributedMapping/neighborPoseEstimates

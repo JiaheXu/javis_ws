@@ -1,0 +1,33 @@
+# Sets up ~/.javis
+- name: Setup Local Configuration
+  gather_facts: no
+  hosts: all
+
+  tasks:
+    - name: Copy over sudoers file
+      template:
+        src: "../files/sudoers.d/{{ item }}"
+        dest: /etc/sudoers.d/
+      become: true
+      with_items: [ "date", "nmea_broadcaster", "nvargus-daemon"]
+      when: payload_type != "None"
+
+    - name: Copy over services file
+      template:
+        src: "../files/services/{{ item }}"
+        dest: /etc/systemd/system
+      become: true
+      with_items: [ "javis_spot_forward.service", "javis_velodyne_forward.service", "javis_pt_orin.service"]
+      when: payload_type != "None"
+
+    - name: Enable Services
+      become: true
+      shell: "systemctl enable {{ item }}"
+      with_items: [ "javis_spot_forward", "javis_velodyne_forward"]
+      when: payload_type != "None"
+    
+    - name: Start Services
+      become: true
+      shell: "systemctl restart {{ item }}"
+      with_items: [ "javis_spot_forward", "javis_velodyne_forward"]
+      when: payload_type != "None"

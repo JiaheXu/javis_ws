@@ -1,0 +1,94 @@
+---
+# ////////////////////////////////////////////////////////////////////////
+# setup & install docker
+# ////////////////////////////////////////////////////////////////////////
+- name: docker Setup
+  hosts: all
+  gather_facts: False
+  vars_files:
+  - ../../config/install_options.yaml
+
+  tasks:
+  - name: update apt packages
+    become: true
+    apt:
+      update_cache: yes
+
+  - name: install docker dependency packages
+    become: true
+    apt:
+      name: [ca-certificates, curl, software-properties-common ]
+      state: present
+      force_apt_get: yes
+    when: install_docker
+
+  - name: add official GPG key of docker
+    become: true
+    shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg --yes
+    when: install_docker and "x86" in arch_type
+
+  - name: save the current Ubuntu release version
+    shell: lsb_release -cs
+    register: ubuntu_version
+
+  - name: x86 add the docker release repository {}
+    become: true
+    shell: echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    when: install_docker and "x86" in arch_type
+
+  - name: update apt packages
+    become: true
+    apt:
+      update_cache: yes
+
+  - name: install docker
+    become: true
+    apt:
+      name: [docker-ce, docker-ce-cli, containerd.io]
+      state: present
+      force_apt_get: yes
+    when: install_docker and "x86" in arch_type
+
+  - name: reset docker group
+    become: true
+    user: name={{ lookup('env', 'USER') }} groups=docker append=yes
+    when: install_docker
+
+  # This often fails.... just need to reboot machine after install
+  # - name: reset ssh connection to allow user changes to affect 'current login user'
+  #   meta: reset_connection
+  #   when: install_docker
+
+  - name: validate docker
+    shell: docker --version
+    register: docker_version_out
+    when: install_docker
+
+  - name: output validate docker
+    debug:
+      msg: "Container Output: {{docker_version_out.stdout}}"
+    when: install_docker
+
+  - name: Check for daemon.json
+    stat:
+      path: /etc/docker/daemon.json
+    register: docker_daemon_stat
+    when: install_docker
+  
+  - name: Create default daemon.json
+    template:
+      src: ../files/docker_daemon.json
+      dest: /etc/docker/daemon.json
+    when: install_docker and not docker_daemon_stat.stat.exists
+    become: true
+
+  # configure the default docker daemon
+  - name: Set Docker Daemon DNS
+    become: true
+    shell: "jq '.\"dns\" = [\"8.8.8.8\", \"8.8.4.4\"]' /etc/docker/daemon.json > /tmp/daemon.json.new && mv /tmp/daemon.json.new /etc/docker/daemon.json"
+    when: install_docker and "x86" in arch_type
+
+  - name: Disable docker daemon ipv6
+    become: true
+    shell: "jq '.\"ipv6\" = false' /etc/docker/daemon.json > /tmp/daemon.json.new && mv /tmp/daemon.json.new /etc/docker/daemon.json"
+    when: install_docker and "x86" in arch_type

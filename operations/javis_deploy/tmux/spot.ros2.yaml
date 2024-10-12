@@ -1,0 +1,53 @@
+# The tmux session name, has to be unique
+session_name: pt_start
+
+# Add commands to bash history
+suppress_history: false
+
+# set environment variables
+environment:
+  robot: ${robot}
+
+# starting directory location, to run all commands from
+start_directory: $JAVIS_PATH/
+
+# commands to run before panes startup
+before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -ar -st -- javis_autonomy javis_estimation javis_drivers javis_common javis_ros2
+
+# This is where we list all the stuff we want to run
+windows:
+  - window_name: all_in_one
+    focus: true
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 launch autonomy_executive launch.xml
+        
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 launch spot_driver spot_driver.launch.py config_file:=/home/developer/javis_ws/src/airlab_ros2/src/robot/spot_ros2/spot_driver/config/spot_ros_example.yaml spot_name:=mt001 publish_point_clouds:=False launch_rviz:=False uncompress_images:=False publish_compressed_images:=False
+
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 launch robot_behavior_executive launch.xml
+
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 launch spot_examples launch.xml
+
+  - window_name: cams
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - cd /home/javis
+        - ./start_streaming.sh

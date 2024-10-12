@@ -1,0 +1,42 @@
+# The tmux session name, has to be unique
+session_name: pt_start
+
+# Add commands to bash history
+suppress_history: false
+
+# set environment variables
+environment:
+  robot: ${robot}
+
+# starting directory location, to run all commands from
+start_directory: $JAVIS_PATH/
+
+# commands to run before panes startup
+before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -ar -st -- javis_autonomy javis_estimation javis_drivers javis_common
+
+# This is where we list all the stuff we want to run
+windows:
+  - window_name: roscore
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roscore
+
+  - window_name: drivers
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_drivers
+        - roslaunch --wait javis_drivers_core collect_data.launch
+
+  - window_name: logging
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - sleep 5
+        - javis-log --log-dir /logging --config collect_data --date-folder

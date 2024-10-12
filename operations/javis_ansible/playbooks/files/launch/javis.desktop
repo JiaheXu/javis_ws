@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=true
+Exec=bash -c '(source ~/.javis/auto/javis_redirect.bash && javis launch) || (echo "Launch Failed :(" && sleep 10)'
+Name=JAVIS Launch
+Comment=Launch the default javis configuration for this computer
+Name[en]=JAVIS Launch
+Comment[en]=Launch the default javis configuration for this computer
+Icon=javis-icon.png

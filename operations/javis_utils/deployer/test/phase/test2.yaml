@@ -1,0 +1,8 @@
+- pwd
+- task1:
+  - sub1:
+    - ls -all
+  - whoami
+  - sub2:
+    - echo 'Am I subtask 2? '
+  - hostname

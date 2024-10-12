@@ -1,0 +1,172 @@
+---
+# ////////////////////////////////////////////////////////////////////////
+# install & setup ROS packages
+# ////////////////////////////////////////////////////////////////////////
+- name: ros install setup
+  hosts: all
+  gather_facts: False
+  vars_files:
+  - ../../config/packages.yaml
+  - ../../config/install_options.yaml
+
+  # ////////////////////////////////////////////////////////////////////////
+  # Tasks to execute
+  # ////////////////////////////////////////////////////////////////////////
+  tasks:
+
+    # ////////////////////////////////////////////////////////////////////////
+    # Install Base Packages
+    # ////////////////////////////////////////////////////////////////////////
+    - name: update apt packages
+      become: true
+      apt:
+        force: yes          # force yes
+        force_apt_get: yes
+        update_cache: yes   # force apt-get update
+      when: ros_install
+
+    - name: Warn 16.04 ROS
+      fail:
+        msg: "Please install ROS Kinetic Manually or use docker."
+      ignore_errors: true
+      when: '"xenial" in ubuntu_release'
+
+    - set_fact:
+        ros_version: "melodic"
+      when: '"bionic" in ubuntu_release'
+
+    - set_fact:
+        ros_version: "noetic"
+      when: '"focal" in ubuntu_release'
+    
+    - set_fact:
+        ros_version: "humble"
+      when: '"jammy" in ubuntu_release'
+
+    - name: setup {{ ros_version }} apt keys
+      shell: "curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg"
+      become: true
+      when: ros_install
+
+    - name: setup {{ ros_version }} keys
+      shell: echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+      become: true
+      when: ros_install
+
+    - name: update {{ ros_version }} apt packages
+      become: true
+      apt:
+        force: yes          # force yes
+        force_apt_get: yes
+        update_cache: yes   # force apt-get update
+      when: ros_install
+
+    - name: install ros humble prerequisite packages
+      become: true
+      apt:
+        name: "{{ apt.ros_humble.pre }}"
+        state: present
+        force: yes          # force yes
+        force_apt_get: yes
+        install_recommends: yes
+        update_cache: yes   # force apt-get update
+      when: ros_install and ros_version == "humble"
+
+    - name: install ros noetic prerequisite packages
+      become: true
+      apt:
+        name: "{{ apt.ros_noetic.pre }}"
+        state: present
+        force: yes          # force yes
+        force_apt_get: yes
+        install_recommends: yes
+        update_cache: yes   # force apt-get update
+      when: ros_install and ros_version == "noetic"
+
+    - name: install ros melodic prerequisite packages
+      become: true
+      apt:
+        name: "{{ apt.ros_melodic.pre }}"
+        state: present
+        force: yes          # force yes
+        force_apt_get: yes
+        install_recommends: yes
+        update_cache: yes   # force apt-get update
+      when: ros_install and ros_version == "melodic"
+
+    - name: ros {{ ros_version }} desktop full install
+      apt:
+        name: "ros-{{ ros_version }}-desktop-full"
+        update_cache: yes
+      become: true
+      when: ros_install
+
+    - name: install ros humble extra packages
+      become: true
+      apt:
+        name: "{{ apt.ros_humble.extra }}"
+        state: present
+        force: yes          # force yes
+        force_apt_get: yes
+        install_recommends: yes
+        update_cache: yes   # force apt-get update
+      when: ros_install and ros_version == "humble"
+
+    - name: install ros noetic extra packages
+      become: true
+      apt:
+        name: "{{ apt.ros_noetic.extra }}"
+        state: present
+        force: yes          # force yes
+        force_apt_get: yes
+        install_recommends: yes
+        update_cache: yes   # force apt-get update
+      when: ros_install and ros_version == "noetic"
+
+    - name: install ros melodic extra packages
+      become: true
+      apt:
+        name: "{{ apt.ros_melodic.extra }}"
+        state: present
+        force: yes          # force yes
+        force_apt_get: yes
+        install_recommends: yes
+        update_cache: yes   # force apt-get update
+      when: ros_install and ros_version == "melodic"
+  
+    # remove previous file
+    - name: Remote old rosdep sources
+      become: true
+      file:
+        path: /etc/ros/rosdep/sources.list.d/20-default.list
+        state: absent
+      when: ros_install
+
+    - name: rosdep {{ ros_version }} initialize
+      command: rosdep init
+      become: true
+      ignore_errors: True
+      when: ros_install
+
+    - name: rosdep {{ ros_version }} update
+      command: rosdep update
+      ignore_errors: True
+      when: ros_install
+
+    - name: bash ros {{ ros_version }} environment setup
+      lineinfile: dest={{ item.file }} state=present line={{ item.line }}
+      with_items:
+        - { line: 'source /opt/ros/{{ ros_version }}/setup.bash', file: "~/.bashrc" }
+      when: ros_install
+
+    - name: check that zshrc exists
+      stat:
+        path: ~/.zshrc
+      register: stat_result
+      when: ros_install
+
+    - name: zsh ros {{ ros_version }} environment setup
+      lineinfile: dest={{ item.file }} state=present line={{ item.line }}
+      with_items:
+        - { line: 'source /opt/ros/{{ ros_version }}/setup.zsh', file: "~/.zshrc" }
+      when: ros_install and stat_result.stat.exists

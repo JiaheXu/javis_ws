@@ -1,0 +1,18 @@
+#############################################################
+# Required Environment Variabls:
+# - JAVIS_COMMON_DIR: location of javis_common src directory
+# - JAVIS_CAMERAS_DIR: location of javis_cameras src directory
+# - JAVIS_BUILD_PROFILE: profile to catkin config to
+#############################################################
+- '[ ! -z "$JAVIS_COMMON_DIR" ] || ( echo "ERROR: JAVIS_COMMON_DIR not set" && exit 1 )'
+- '[ ! -z "$JAVIS_AUTON_DIR" ] || ( echo "ERROR: JAVIS_AUTON_DIR not set" && exit 1 )'
+- '[ ! -z "$JAVIS_BUILD_PROFILE" ] || ( echo "ERROR: JAVIS_BUILD_PROFILE not set" && exit 1 )'
+- CATKIN_PROFILE=$JAVIS_BUILD_PROFILE
+- deps:
+  - CATKIN_DIR=$JAVIS_COMMON_DIR
+  - +extend: actions/catkin/build
+  - +extend: actions/catkin/clean
+- core:
+  - CATKIN_DIR=$JAVIS_AUTON_DIR
+  - +extend: actions/catkin/build
+  - +extend: actions/catkin/clean

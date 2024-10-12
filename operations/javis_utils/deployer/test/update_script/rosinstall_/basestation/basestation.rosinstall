@@ -1,0 +1,13 @@
+- git:
+    local-name: base_main_class
+    uri: git@bitbucket.org:cmusubt/base_main_class.git
+    version: 9931153b7cbb7620b04107ece149c9de2a617b53
+- git:
+    local-name: base_main_class_py
+    uri: git@bitbucket.org:cmusubt/base_main_class_py.git
+    version: aac11c79819a228696eb48bc6cc60fb652778e15
+- git:
+    local-name: basestation_gui_python
+    uri: git@bitbucket.org:cmusubt/basestation_gui_python.git
+    version: 8205cb7b6465719d9b8c20b7b9f3ccf18b1cc0c6
+

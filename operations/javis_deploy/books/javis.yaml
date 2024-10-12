@@ -1,0 +1,77 @@
+# print output with nice colors
+- 'YELLOW="\033[1;33m"'
+- 'BLUE="\033[1;36m"'
+- 'RESET="\033[0m"'
+# export the workspace paths
+- JAVIS_WS=$JAVIS_PATH
+- JAVIS_SRC=$JAVIS_SRC_PATH
+- JAVIS_DEVEL_DIR=$JAVIS_WS/devel
+- JAVIS_COMMON_DIR=$JAVIS_SRC/javis_common
+- JAVIS_CAMERAS_DIR=$JAVIS_SRC/javis_cameras
+- JAVIS_DRIVERS_DIR=$JAVIS_SRC/javis_drivers
+- JAVIS_LOAM_DIR=$JAVIS_SRC/javis_estimation
+- JAVIS_SIM_DIR=$JAVIS_SRC/javis_sim
+
+- JAVIS_ROS2_DIR=$JAVIS_SRC/javis_ros2
+
+- JAVIS_AUTON_DIR=$JAVIS_SRC/javis_autonomy
+- JAVIS_BUILD_PROFILE=default
+
+- DOCKER_COMPOSE_EXTEND=javis
+- common:
+  - +docker:javis_common
+  - +extend: javis_common/catkin
+- common:
+  - +extend: javis_common/docker
+
+- drivers:
+  - +docker:javis_drivers
+  - +extend: javis_drivers/catkin
+- drivers:
+  - +extend: javis_drivers/docker
+
+- estimation:
+  - +docker:javis_estimation
+  - +extend: javis_estimation/catkin
+- estimation:
+  - +extend: javis_estimation/docker
+
+- autonomy:
+  - +docker:javis_autonomy
+  - +extend: javis_autonomy/catkin
+- autonomy:
+  - +extend: javis_autonomy/docker
+
+- sim:
+  - +docker:javis_sim
+  - +extend: javis_sim/catkin
+- sim:
+  - +extend: javis_sim/docker
+
+
+
+- ros2:
+  - +docker:javis_ros2
+  # - +extend: javis_ros2/catkin
+- ros2:
+  - +extend: javis_ros2/docker
+
+
+- docker:
+  - dangling:
+    - docker rmi -f $(docker images -f "dangling=true" -q)
+  - clean:
+    - docker rmi -f $(docker images -f "dangling=true" -q)  || true
+    - docker images
+  # stopping containers
+  - stop:
+    - docker stop $(docker ps -a -q) || true
+    - docker ps -a
+  # removing containers
+  - rm:
+    - docker rm -f $(docker ps -a -q) || true
+    - docker images
+  # removes all subt docker images
+  - prune:
+    - docker images --filter "reference=subt/*" | awk '{print $3}' | xargs -I {} docker rmi -f {} || true
+    - docker images

@@ -1,0 +1,14 @@
+[Unit]
+Description=Host Info Server
+Requires=network-online.target
+After=network.target network-online.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+ExecStart=/usr/local/bin/host_info_server
+User=root
+
+[Install]
+WantedBy=multi-user.target

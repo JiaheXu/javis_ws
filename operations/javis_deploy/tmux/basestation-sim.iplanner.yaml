@@ -1,0 +1,37 @@
+# The tmux session name, has to be unique
+session_name: basestation_start
+
+# Add commands to bash history
+suppress_history: false
+
+# set environment variables
+environment:
+  system_id: ${JAVIS_SYSTEM_ID}
+
+# starting directory location, to run all commands from
+start_directory: $JAVIS_PATH/
+
+# commands to run before panes startup
+before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -st -- javis_autonomy javis_common javis_sim
+
+# This is where we list all the stuff we want to run
+windows:
+  - window_name: roscore
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roscore
+
+  # Basestation
+  - window_name: basestation
+    focus: true
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_sim
+        - roslaunch --wait vehicle_simulator vehicle_simulator.launch
+      - shell_command:
+        - docker-join.bash -n javis_sim
+        - roslaunch --wait iplanner_node iplanner_viz.launch

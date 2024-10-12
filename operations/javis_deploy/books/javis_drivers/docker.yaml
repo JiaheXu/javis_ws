@@ -1,0 +1,14 @@
+# Registry
+- '[ ! -z "$AZURE_REGISTRY" ] || ( echo "ERROR: AZURE_REGISTRY not set" && exit 1 )'
+- '[ ! -z "$DOCKER_COMPOSE_EXTEND" ] || ( echo "ERROR: DOCKER_COMPOSE_EXTEND not set" && exit 1 )'
+
+
+- DOCKER_IMAGE=javis/${ARCH_T}.drivers:${DOCKER_IMAGE_VERSION}
+- SERVICE=javis_drivers
+- CONTAINER=javis_drivers
+- +extend: actions/docker/registry
+- +extend: actions/docker/make
+- shell:
+  - +extend: actions/docker/start
+  - +extend: actions/docker/stop
+  - +extend: actions/docker/rm

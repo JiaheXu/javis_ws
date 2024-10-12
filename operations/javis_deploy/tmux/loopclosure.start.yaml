@@ -1,0 +1,108 @@
+# The tmux session name, has to be unique
+session_name: pt_start
+
+# Add commands to bash history
+suppress_history: false
+
+# set environment variables
+environment:
+  robot: ${robot}
+
+# starting directory location, to run all commands from
+start_directory: $JAVIS_PATH/
+
+# commands to run before panes startup
+before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -ar -st -- javis_autonomy javis_estimation javis_drivers javis_common
+
+# This is where we list all the stuff we want to run
+windows:
+  - window_name: roscore
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roscore
+
+  - window_name: Drivers
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_drivers
+        - roslaunch --wait javis_drivers_core superodom_driver.launch
+            launch_cameras:=true
+            use_nvargus:=false
+            super_odom:=true
+      - shell_command:
+        - docker-join.bash -n javis_drivers
+        - roslaunch --wait javis_drivers_core ardupilot.launch
+      - shell_command:
+        - sleep 10
+        - docker-join.bash -n javis_drivers
+        - mon launch argus_multicam select_camera.launch
+      # - shell_command:
+      #   - docker-join.bash -n javis_drivers
+      #   - roslaunch --wait javis_drivers_core ardupilot.launch
+      - shell_command:
+        - docker-join.bash -n javis_drivers
+        - cd /home/developer/javis_ws/src/javis_drivers/flir_ros/script/set_flir_mode
+        - ./set_slave_mode.py
+        - mon launch flir_ros_sync flir_ros.launch
+
+  - window_name: estimation
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_estimation
+        - roslaunch --wait javis_estimation_core estimation.launch
+            voxel_size:=0.2
+            use_super_odometry:=true
+            launch_rc_vio:=true
+            launch_spot_vio:=false
+            use_loop_closure:=false
+            sim_loop_closure:=true
+            
+      - shell_command:
+        - docker-join.bash -n javis_estimation
+        - sleep 25
+        - cd /home/developer/javis_ws/src/javis_estimation/
+        - source /home/developer/javis_ws/devel/javis_estimation/setup.bash
+        - roslaunch slam_tools superodom_playback.launch
+
+  - window_name: autonomy
+    focus: true
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_autonomy
+        - roslaunch --wait javis_autonomy_core autonomy.launch launch_exploration:=false launch_terrain_analysis_large:=false \
+            launch_terrain_analysis:=false launch_local_planner:=true launch_spot_planner:=false launch_ilqr:=true \
+            launch_transform_manager:=true launch_mavlink:=false launch_convoy_interface:=false joystick_speed:=2.0 \
+            exploration_speed:=2.0 waypoint_speed:=2.0 manual_speed:=2.0 grid_res:=0.05
+
+
+  # comms manager
+  - window_name: comms manager
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roslaunch --wait communication_manager communication_manager.launch
+
+      - shell_command:
+        - cd /external/code/communication_ros
+        - source devel/setup.bash
+        - sleep 30
+        - roslaunch img_sharing runclient.launch
+
+  - window_name: logging
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - sleep 5
+        - javis-log --log-dir /logging --config super_odom --date-folder

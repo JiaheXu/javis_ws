@@ -1,0 +1,26 @@
+- pwd
+- 'export TEST_DIR=/tmp'
+
+- task1:
+  - 'echo "test dir is:  $TEST_DIR" '
+
+  - sub1:
+    - cd ~
+  
+  - sub2:
+    # should print TEST if sub1 is performed. should not be in cd ~
+    - pwd
+
+  - subt-task2:
+    - subt1:
+      - echo "hello"
+      - pwd
+    - subt2:
+      - echo "hello subt2"
+      - pwd
+
+  - sub3:
+    # should print TEST if sub1 is performed. should not be in cd ~
+    - pwd
+  
+  - hostname

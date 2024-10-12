@@ -1,0 +1,73 @@
+- name: Install Python Scripts and Tools
+  gather_facts: no
+  hosts: all
+  vars:
+    enable_host_info_server: false
+
+  tasks:
+    - name: Copy host_info_tools to tmp install location
+      copy:
+        src: "{{ local_javis_path }}/operations/javis_utils/host_info_tools"
+        dest: /tmp
+      when: local_javis_path != ""
+
+    # - name: Install Host Info Tools
+    #   become: True
+    #   shell: python3 -m pip install /tmp/host_info_tools
+    #   when: local_javis_path != ""
+
+    # - name: Fix Host Info Tools Install
+    #   become: True
+    #   lineinfile:
+    #     path: /usr/local/bin/hit
+    #     regexp: '^#!python'
+    #     line: '#!/usr/bin/env python3'
+    #   when: local_javis_path != ""
+
+    # - name: Fix Host Info Tools Install
+    #   become: True
+    #   lineinfile:
+    #     path: /usr/local/bin/host_info_server
+    #     regexp: '^#!python'
+    #     line: '#!/usr/bin/env python3'
+    #   when: local_javis_path != ""
+
+    # - name: Copy deployer to tmp install location
+    #   copy:
+    #     src: "{{ local_javis_path }}/operations/javis_utils/deployer"
+    #     dest: /tmp
+    #   when: local_javis_path != ""
+
+    # - name: Install Deployer
+    #   shell: python3 -m pip install /tmp/deployer --user
+    #   when: local_javis_path != ""
+
+    # - name: Potentially Re-enable hit server
+    #   shell: hit enable
+    #   become: True
+    #   when: (hit_running or enable_host_info_server) and local_javis_path != ""
+
+    # - name: Check for hit params
+    #   stat:
+    #     path: /tmp/hit_params
+    #   register: hit_params_stat
+
+    # - name: Import Estisting parameters
+    #   shell: hit params import /tmp/hit_params
+    #   register: hit_import_out
+    #   when: hit_params_stat.stat.exists and (hit_running or enable_host_info_server) and local_javis_path != ""
+
+    # - name: Jog javis-hosts
+    #   shell: "sleep 1 && {{ javis_path }}/operations/javis_utils/scripts/javis-hosts --jog"
+    #   register: javis_hosts_out_1
+    #   ignore_errors: True
+    #   when: (hit_running or enable_host_info_server) and local_javis_path != ""
+
+    # - debug:
+    #     var: hit_import_out.stdout
+
+    # - name: Remove existing parameter file
+    #   file:
+    #     state: absent
+    #     path: /tmp/hit_params
+    #   when: hit_params_stat.stat.exists

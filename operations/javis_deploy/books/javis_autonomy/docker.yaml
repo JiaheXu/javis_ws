@@ -1,0 +1,11 @@
+- '[ ! -z "$DOCKER_COMPOSE_EXTEND" ] || ( echo "ERROR: DOCKER_COMPOSE_EXTEND not set" && exit 1 )'
+
+- DOCKER_IMAGE=javis/${ARCH_T}.autonomy:${DOCKER_IMAGE_VERSION}
+- SERVICE=javis_autonomy
+- CONTAINER=javis_autonomy
+- +extend: actions/docker/make
+- +extend: actions/docker/registry
+- shell:
+  - +extend: actions/docker/start
+  - +extend: actions/docker/stop
+  - +extend: actions/docker/rm

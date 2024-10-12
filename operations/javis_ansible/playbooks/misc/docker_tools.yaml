@@ -1,0 +1,110 @@
+---
+# ////////////////////////////////////////////////////////////////////////
+# setup & install docker tools
+# ////////////////////////////////////////////////////////////////////////
+- name: docker tools setup
+  hosts: all
+  gather_facts: False
+  vars_files:
+  - ../../config/install_options.yaml
+
+  # ////////////////////////////////////////////////////////////////////////
+  # Tasks to execute
+  # ////////////////////////////////////////////////////////////////////////
+  tasks:
+
+  # //////////////////////////////////////////////////////////////////////////
+  # Docker Compose
+  # //////////////////////////////////////////////////////////////////////////
+
+  - name: update apt packages
+    become: true
+    apt:
+      update_cache: yes
+
+  - name: get system info, kernel name
+    shell: uname -s
+    register: uname_kernel
+
+  - name: get system info, machine name
+    shell: uname -m
+    register: uname_machine
+
+  - name: download docker compose (x86)
+    become: true
+    get_url:
+        url: https://github.com/docker/compose/releases/download/1.24.1/docker-compose-{{ uname_kernel.stdout }}-{{ uname_machine.stdout }}
+        dest: /usr/local/bin/docker-compose
+        mode: a+x
+    when: install_docker_compose and "x86" in arch_type
+
+  - name: create docker compose symbolic link (x86)
+    become: true
+    file:
+      src: /usr/local/bin/docker-compose
+      dest: /usr/bin/docker-compose
+      state: link
+    ignore_errors: True
+    when: install_docker_compose and "x86" in arch_type
+
+  - name: which docker compose (x86)
+    become: true
+    shell: which docker-compose
+    register: docker_compose_which_out
+    when: install_docker_compose and "x86" in arch_type
+
+  - name: enable docker-compose permissions (x86)
+    become: true
+    shell: chmod a+rx {{docker_compose_which_out.stdout}}
+    when: install_docker_compose and "x86" in arch_type
+
+  - name: install packages (arm)
+    become: true
+    apt:
+        name: [ cargo ]
+    when: install_docker_compose and "x86" not in arch_type
+    
+  - name: Install docker-compose pre (arm)
+    become: true
+    shell: python3 -m pip install setuptools_rust testresources
+    when: install_docker_compose and "x86" not in arch_type
+
+  - name: install docker compose (arm)
+    become: true
+    shell: python3 -m pip install -I docker-compose
+    register: docker_version_out
+    when: install_docker_compose and "x86" not in arch_type
+
+  - name: validate docker compose
+    become: true
+    shell: docker-compose --version
+    register: docker_compose_version_out
+    when: install_docker_compose
+
+  - name: output validate docker compose
+    debug:
+      msg: "Docker Compose Version: {{docker_compose_version_out.stdout}}"
+    when: install_docker_compose
+
+  # //////////////////////////////////////////////////////////////////////////
+  # Docker Machine
+  # //////////////////////////////////////////////////////////////////////////
+
+  - name: download docker machine
+    become: true
+    get_url:
+      url: https://github.com/docker/machine/releases/download/v0.16.0/docker-machine-{{ uname_kernel.stdout }}-{{ uname_machine.stdout }}
+      dest: /tmp/docker-machine
+      mode: a+x
+    when: install_docker_machine
+
+  - name: stat docker machine
+    stat: path=/tmp/docker-machine
+    register: docker_machine_stat
+    when: install_docker_machine
+
+  - name: move docker machine to 'bin'
+    become: true
+    command: mv /tmp/docker-machine /usr/local/bin/
+    when: install_docker_machine and docker_machine_stat.stat.exists
+

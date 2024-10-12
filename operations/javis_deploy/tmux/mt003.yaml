@@ -1,0 +1,115 @@
+# The tmux session name, has to be unique
+session_name: pt_start
+
+# Add commands to bash history
+suppress_history: false
+
+# set environment variables
+environment:
+  robot: ${robot}
+
+# starting directory location, to run all commands from
+start_directory: $JAVIS_PATH/
+
+# commands to run before panes startup
+before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -ar -st -- javis_autonomy javis_estimation javis_drivers javis_common javis_ros2
+
+# This is where we list all the stuff we want to run
+windows:
+  - window_name: all_in_one
+    focus: true
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=30
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 launch autonomy_executive launch_xbox.xml sensor_index:=3 robot_prefix:=mt003
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=30
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 launch aist_wheelchair launch.py
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=30
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 launch robot_behavior_executive launch.xml system_id:=mt003
+
+  - window_name: cams
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - cd /home/javis
+        - ./start_streaming.sh
+
+  - window_name: domain
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=30
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 launch domain_config mt003.xml
+
+  - window_name: triage
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=30
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 launch dtc_launch dtc_launch_20240822.launch.xml sensor_index:=3 robot_prefix:=mt003
+
+  - window_name: apriltag_echo
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=30
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 topic echo /mt003/casualty_identity
+
+  - window_name: sensor
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=30
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 launch attachment all.launch attachment:=attachment3
+
+  - window_name: logging
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=30
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash
+        - cd ~/javis_ws  
+        # - ros2 bag record -a -b 4294967296  
+        - ros2 bag record -s mcap
+          /critical
+          /vitals
+          /injury
+          /iphone3/heart_rate/cphys
+          /iphone3/resp_rate/cphys
+          /attachment3/radar/data_frame 
+          /attachment3/radar/serial_read 
+          /attachment3/radar/serial_write 
+          /attachment3/thermal/image_raw 
+          /attachment3/thermal/camera_info -b 429496728

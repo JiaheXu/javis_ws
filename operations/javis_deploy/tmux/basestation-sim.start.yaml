@@ -1,0 +1,140 @@
+# The tmux session name, has to be unique
+session_name: basestation_start
+
+# Add commands to bash history
+suppress_history: false
+
+# set environment variables
+environment:
+  system_id: ${JAVIS_SYSTEM_ID}
+
+# starting directory location, to run all commands from
+start_directory: $JAVIS_PATH/
+
+# commands to run before panes startup
+before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -st -- javis_autonomy javis_common javis_sim
+
+# This is where we list all the stuff we want to run
+windows:
+  - window_name: roscore
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roscore
+
+  # Basestation
+  - window_name: basestation
+    focus: true
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roslaunch --wait javis_visualization basestation.launch sim:=true
+      - shell_command:
+        - docker-join.bash -n javis_drivers
+        - roslaunch --wait javis_drivers_core joy.launch joy_topic:=/${JAVIS_SYSTEM_ID}/joy
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roslaunch --wait javis_behavior_executive bst_behavior_tree_full.launch
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roslaunch --wait javis_rqt_gui gui.launch
+
+  # Control RC1
+  - window_name: rc1_autonomy
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_autonomy
+        - roslaunch --wait javis_autonomy_core autonomy.launch
+            sim:=true
+            system_id:=rc1
+            system_type:=rc
+            mavlink_port:=14572
+
+      - shell_command:
+        - docker-join.bash -n javis_estimation
+        - roslaunch --wait javis_estimation_core sim_estimation.launch
+            system_id:=rc1
+            system_type:=rc
+
+  # Sim RC1
+  - window_name: rc1_sim
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_sim
+        - roslaunch --wait javis_gazebo javis_rc.launch world_name:=racecar_tunnel system_id:=rc1 spawn_gazebo:=true start_x:=2
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - sleep 2
+        - rosrun javis_visualization dummy_robot_publisher.py __name:=rc1_dummy_pub _system_id:=rc1
+
+
+  # Control RC2
+  - window_name: rc2_autonomy
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_autonomy
+        - roslaunch --wait javis_autonomy_core autonomy.launch
+            sim:=true
+            system_id:=rc2
+            system_type:=rc
+            mavlink_port:=14571
+      - shell_command:
+        - docker-join.bash -n javis_estimation
+        - roslaunch --wait javis_estimation_core sim_estimation.launch
+            system_id:=rc2
+            system_type:=rc
+
+  # Sim RC2
+  - window_name: rc2_sim
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_sim
+        - roslaunch --wait javis_gazebo javis_rc.launch world_name:=racecar_tunnel system_id:=rc2 spawn_gazebo:=False
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - sleep 2
+        - rosrun javis_visualization dummy_robot_publisher.py __name:=rc2_dummy_pub _system_id:=rc2
+
+
+
+  # # Control RC3
+  # - window_name: rc3_autonomy
+  #   focus: false
+  #   layout: main-horizontal
+  #   panes:
+  #     - shell_command:
+  #       - docker-join.bash -n javis_autonomy
+  #       - roslaunch --wait javis_autonomy_core autonomy.launch
+  #           sim:=true
+  #           system_id:=rc3
+  #           system_type:=rc
+  #           mavlink_port:=14572
+  #     - shell_command:
+  #       - docker-join.bash -n javis_estimation
+  #       - roslaunch --wait javis_estimation_core sim_estimation.launch
+  #           system_id:=rc3
+  #           system_type:=rc
+
+  # # Sim RC3
+  # - window_name: rc3_sim
+  #   focus: false
+  #   layout: main-horizontal
+  #   panes:
+  #     - shell_command:
+  #       - docker-join.bash -n javis_sim
+  #       - roslaunch --wait javis_gazebo javis_rc.launch world_name:=racecar_tunnel system_id:=rc3 spawn_gazebo:=False start_x:=-2
+  #     - shell_command:
+  #       - docker-join.bash -n javis_common
+  #       - sleep 2
+  #       - rosrun javis_visualization dummy_robot_publisher.py __name:=rc3_dummy_pub _system_id:=rc3

@@ -1,0 +1,17 @@
+install_anydesk: false
+set_anydesk_password: false
+install_azure: true
+install_terraform: false
+install_common_apt: true
+install_common_pip: true
+install_gstreamer_apt: true
+install_orin_apt: true
+install_rdp: false
+setup_bitbucket_key: true
+setup_javis_key: false
+install_nvidia_docker: true
+install_docker: true
+install_docker_compose: true
+install_docker_machine: true
+ros_install: true
+install_git_submodule_tools: true

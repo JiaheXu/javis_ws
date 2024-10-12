@@ -1,0 +1,51 @@
+- name: Uninstall Python Scripts and tools
+  gather_facts: no
+  hosts: all
+
+  tasks:
+    - name: Check for running hit server
+      become: true
+      shell: hit list
+      register: hit_list_result
+      ignore_errors: True
+  
+    - name: Set result of hit list
+      set_fact:
+        hit_running: "{{ hit_list_result.rc == 0 }}"
+
+    - name: Export Estisting parameters
+      shell: hit params export /tmp/hit_params
+      ignore_errors: True
+      when: hit_running
+
+    - name: Disable Running hit server
+      become: True
+      shell: hit disable
+      when: hit_running
+
+    # - name: Uninstall Host Info Tools (might fail but that's cool)
+    #   become: True
+    #   shell: python3 -m pip uninstall -y host-info-tools
+    #   ignore_errors: True
+
+    - name: Remove Host Info Tools Config
+      become: True
+      file:
+        state: absent
+        path: /etc/host_info_tools
+
+    - name: Copy deployer to tmp install location
+      copy:
+        src: "{{ local_javis_path }}/operations/javis_utils/deployer"
+        dest: /tmp
+      when: local_javis_path != ""
+
+    - name: Generate deployer egg
+      shell: "cd /tmp/deployer/ && python3 setup.py install --record /tmp/egg-files.txt --user"
+      ignore_errors: True
+      when: local_javis_path != ""
+
+    # - name: Uninstall Deployer
+    #   shell: cat /tmp/egg-files.txt | xargs rm -rf
+    #   ignore_errors: True
+    #   when: local_javis_path != ""

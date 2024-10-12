@@ -1,0 +1,41 @@
+# the tmux session name, has to be unique
+session_name: basestation_start
+
+# add commands to bash history
+suppress_history: true
+
+# start directory
+start_directory: $JAVIS_PATH/
+
+# commands to run before panes startup
+before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -st -- javis_common javis_drivers
+
+# basestation nodes
+windows:
+  - window_name: shell
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - echo "Shell Access here!"
+
+  # Basestation
+  - window_name: basestation
+    focus: true
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roslaunch --wait javis_visualization basestation.launch
+      - shell_command:
+
+  - window_name: comms
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - sleep 5
+        - cd /logging
+        - rosbag play <Path to bag you want to play back>

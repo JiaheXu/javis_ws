@@ -1,0 +1,45 @@
+version: '2.3'
+services:
+  # ////////////////////////////////////////////////////////////////////////////
+  # run deviceQuery, verify nvidia gpu works in docker container
+  # ////////////////////////////////////////////////////////////////////////////
+
+  # ////////////////////////////////////////////////////////////////////////////
+  # Prerequisites:
+  # 1. Build deviceQuery on local system
+  #   cd /usr/local/cuda/samples/1_Utilities/deviceQuery/
+  #   make -j8
+  #   ./deviceQuery
+  # 2. Copy deviceQuery executable to docker build context
+  #   cp /usr/local/cuda/samples/1_Utilities/deviceQuery/deviceQuery ${JAVIS_PATH}/javis_docker/dockerfiles/cuda/$(arch)/deviceQuery
+  #     * where '$(arch)' is what you specify on the docker-compose-wrapper cli argument
+  #
+  # For more details, see: https://github.com/Technica-Corporation/Tegra-Docker
+  # ////////////////////////////////////////////////////////////////////////////
+  deviceQuery:
+    image: device_query
+    container_name: device-query-test
+    build:
+      context: ${JAVIS_DOCKERFILE_PATH}/cuda/
+      dockerfile: ${JAVIS_DOCKERFILE_PATH}/${ARCH_T}/deviceQuery/deviceQuery.dockerfile
+      args:
+        - user_id
+        - arch
+    privileged: true
+    security_opt:
+      - seccomp:unconfined
+    network_mode: "host"
+    devices:
+      - /dev/nvhost-ctrl
+      - /dev/nvhost-ctrl-gpu
+      - /dev/nvhost-prof-gpu
+      - /dev/nvmap
+      - /dev/nvhost-gpu
+      - /dev/nvhost-as-gpu
+    volumes:
+      - ${JAVIS_PATH}:/home/developer/javis_ws/
+      # gui configurations
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /etc/localtime:/etc/localtime:ro
+      - /dev/input:/dev/input
+      - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra

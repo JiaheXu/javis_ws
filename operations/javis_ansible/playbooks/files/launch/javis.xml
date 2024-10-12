@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>
+  <mime-type type="application/javis-launch">
+    <comment>JAVIS Launch Configuration</comment>
+    <glob pattern="*.javis"/>
+    <icon name="javis-icon"/>
+
+    <magic priority="50">
+      <match type="string" value="# JAVIS LAUNCH CONFIGURATION" offset="0"/>
+    </magic>
+  </mime-type>
+</mime-info>

@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+import sys, os, re, argparse, glob
+
+# //////////////////////////////////////////////////////////////////////////////
+# check global environment variables are setup
+if "DEPLOYER_PATH" not in os.environ:
+  raise ValueError("'DEPLOYER_PATH' is missing, please run the deployer installer")
+if "DEPLOYER_BOOKS_PATH" not in os.environ:
+  raise ValueError("'DEPLOYER_BOOKS_PATH' is missing, please run the deployer installer")
+if "DEPLOYER_SCRIPTS" not in os.environ:
+  raise ValueError("'DEPLOYER_SCRIPTS' is missing, please run the deployer installer")
+if "DEPLOYER_BOOKS_EXTEND_PATH" not in os.environ:
+  raise ValueError("'DEPLOYER_BOOKS_EXTEND_PATH' is missing, please run the deployer installer")
+
+# //////////////////////////////////////////////////////////////////////////////
+def yaml_file_validation(file_path):
+  ''' brief validate yaml file input argument is valid '''
+  # validate if file argument was given as input
+  if not file_path: return
+
+  # validate if file exists & has the 'yaml' extension
+  if os.path.isfile(file_path) and file_path.endswith('.yaml'):
+    return file_path
+  # validation failed, raise error
+  raise argparse.ArgumentTypeError("'{}' is not a valid yaml script file. ".format(file_path))
+
+# //////////////////////////////////////////////////////////////////////////////
+def timeout_validation(t):
+  ''' brief validate time input argument is valid '''
+  # validate if timeout is a number greater than 0
+  if float(t) < 0:
+    raise argparse.ArgumentTypeError(
+      header.fmt.error("timeout value: '{}' must be greater than 0".format(t)))
+  return float(t) # return a float, since we are considering seconds
+
+# //////////////////////////////////////////////////////////////////////////////
+def print_info():
+  header.stdout.title(" == Deployer Environment ==")
+  header.stdout.text("deployer path:    {}".format(header.path.TOP))
+  header.stdout.text("deploybooks path: {}".format(header.path.BOOKS))
+
+# //////////////////////////////////////////////////////////////////////////////
+def parse_args():
+  ''' @brief parse and process command line argument options '''
+  # command line arguments options
+  parser = argparse.ArgumentParser(
+    description='Deployer commander: execute commands read from a yaml file, on host system (local or docker) or on remote system.')
+  parser.add_argument(
+    '--all', '-a', action='store_true', help='Run all commands')
+  parser.add_argument(
+    '--sections', '-s', metavar='S', type=str, nargs='+', default='', help='Deployer command section to batch run.')
+  parser.add_argument(
+    '--env', '-e', metavar='E', type=str, nargs='+', default='', help='Pass environment variables to deployer batch run. Usage: -e name=value')
+  parser.add_argument(
+    '--preview', '-p', action='store_true', help='Preview batch commands to be run (does not execute commands on system)')
+  parser.add_argument(
+    '--verbose', '-v', action='store_true', help='Print all batch commands to be run before execution.')
+  parser.add_argument(
+    '--export', '-ex', metavar='filename',
+    help='''Export all the deployer commands to a file (used by autocompletion).
+            Please provide a filename where the exported commands will be written to.''')
+  parser.add_argument(
+    '--info', '-i', action='store_true', help='show deploybooks path information.')
+  # arguments to be ignored by the user (still can call them, but cant see them, good enough)
+  parser.add_argument(
+    '--yaml', '-y', metavar='filename', type=yaml_file_validation, help=argparse.SUPPRESS)
+  parser.add_argument(
+    '--local', '-local', action='store_true', help=argparse.SUPPRESS)
+  parser.add_argument(
+    '--timeout', '-t', metavar='N', default=-1, type=timeout_validation, help=argparse.SUPPRESS)
+  # filter any phase sections (used during export)
+  parser.add_argument(
+    '--filters', '-f', metavar='F', type=str, nargs='+', default='', help=argparse.SUPPRESS)
+  parser.add_argument(
+    '--ignore', '-ig', metavar='I', type=str, nargs='+', default='', help=argparse.SUPPRESS)
+  parser.add_argument(
+    '--append', '-ap', action='store_true', help=argparse.SUPPRESS)
+  parser.add_argument(
+    '--branch', '-b', metavar='BR', type=str, nargs='?', help=argparse.SUPPRESS)
+  args = parser.parse_args()
+
+  # -- setup argument logic --
+
+  # passed branch name, set as environment variables used by git deployerbooks
+  if args.branch:
+    os.environ["branch"] = args.branch
+
+  # @brief env: propgate any given environment variables
+  for e in args.env:
+    env_var = e.split("=")
+    if len(env_var) != 2:
+      raise parser.error(header.fmt.error(
+        "environment argument has invalid format: {}. Must be of format: 'name=variable' ".format(e)))
+    os.environ[env_var[0]] = env_var[1]
+  return args
+
+# //////////////////////////////////////////////////////////////////////////////
+if __name__ == "__main__":
+  ''' @brief run deployer as script '''
+
+  # parse the user arguments
+  args = parse_args()
+
+  # add deploy package to py path, if not set
+  import os, sys
+  try:
+    import deployer
+  except ImportError:
+    try:
+      path = os.environ["DEPLOYER_PATH"]
+      sys.path.append(path)
+
+      import deployer
+    except ImportError as e:
+      raise Exception('Invalid deployer import: deployer path not found, with error: {}'.format(e))
+    except Exception as e:
+      raise Exception('{} \n - Please re-install deployer or notify maintainer.'.format(e))
+
+  # validate all the environment variable paths
+  deployer.header.path.validate()
+
+  # set 'all', to be any section name -- really ugly way to do this...fine for now
+  if args.all: args.sections = ['']
+
+  # print out deployer information only
+  if args.info: print_info()
+
+  # autocomplete execution -- get the matches only, does not execute anything
+  elif args.export is not None:
+    # TODO: better validity check: if export is given an actual filename
+    deployer.cli.main.export(deployer.header.path.BOOKS, deployer.header.path.EXTEND, args)
+
+  # deployer execution -- run the deployer commands locally or on a remote system
+  else:
+    deployer.cli.main.deployer(deployer.header.path.BOOKS, deployer.header.path.EXTEND, args)

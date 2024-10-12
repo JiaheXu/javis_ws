@@ -1,0 +1,134 @@
+# D
+sync:
+  default: code
+  configs:
+    full:
+      options: "-avzh --delete"
+      excludes: ["build/", "devel/", "logs/", "dds_install/"]
+      includes: [".catkin_tools/profiles/default/config.yaml"]
+
+    code:
+      options: "-avzh --delete"
+      excludes: ["build/", "devel/", "logs/", "dds_install/", "*.git/", ".catkin_tools/profiles/**/packages/", "install/", "log/" ]
+      includes: [".catkin_tools/profiles/**/config.yaml"]
+
+log:
+  payload_base:
+    bags:
+    - split: 4096
+      name: core
+      topics:
+      - logging/autonomy.yaml
+      - logging/javis_core.yaml
+      - logging/sensors.yaml
+      - logging/state_estimation.yaml
+      - logging/stairs.yaml
+    sync_files: { "/syslog": syslog }
+    start_files: { "/syslog": syslog_start }
+    start_cmds: { "ip route": "ip_route", "lsusb": "lsusb", "ifconfig": "ifconfig", "hit list": "hit_list", "hit params": "hit_params" }
+
+
+  super_odom:
+    bags:
+    - split: 4096
+      name: core
+      topics:
+      - logging/autonomy.yaml
+      - logging/javis_core.yaml
+      - logging/sensors.yaml
+      - logging/sensors_extended.yaml
+      - logging/state_estimation.yaml
+    sync_files: { "/syslog": syslog }
+    start_files: { "/syslog": syslog_start }
+    start_cmds: { "ip route": "ip_route", "lsusb": "lsusb", "ifconfig": "ifconfig", "hit list": "hit_list", "hit params": "hit_params" }
+
+  collect_data:
+    bags:
+    - split: 4096
+      name: core
+      topics:
+      - logging/all_sensors.yaml
+    sync_files: { "/syslog": syslog }
+    start_files: { "/syslog": syslog_start }
+    start_cmds: { "ip route": "ip_route", "lsusb": "lsusb", "ifconfig": "ifconfig", "hit list": "hit_list", "hit params": "hit_params" }
+
+  basestation:
+    bags:
+    - split: 4096
+      name: bst
+      topics:
+      - logging/user_interface.yaml
+    sync_files: { "/syslog": syslog }
+    start_files: { "/syslog": syslog_start }
+    start_cmds: { "ip route": "ip_route", "lsusb": "lsusb", "ifconfig": "ifconfig", "hit list": "hit_list", "hit params": "hit_params" }
+
+# The Dev and basestation configurations are
+# essentially the same, but swapped whether sim
+# or real UI launch is default
+
+# Rules for launches for a given system:
+# - the name of each possible launch session must be the same
+# - any docker containers launched must be stopped in the stop yaml
+
+# Please keep that in mind when creating new systems :)
+
+# YAML Organization
+# <system_type>.<system_component>:
+#    launch:
+#     session_name: < session name used by all launch yamls >
+#     launches:
+#       default: <default yaml file to use for this configuration>
+#       <launch a>: <yaml file to use for launch a>
+#     stop: <yaml file to run to stop any existing launch>
+#   logging:
+#     default: name of the log configuration defined above to default to for recording
+#     logs: [ name_a, name_b, ... ] # List of 
+hosts:
+
+  basestation.dev:
+    launch:
+      session_name: basestation_start
+      default: basestation
+      launches:
+        basestation: tmux/basestation.start.yaml
+        test: tmux/basestation.clean_start.yaml
+        ros2: tmux/basestation.ros2.yaml
+
+        mt001: tmux/mt001_basestation.yaml
+        mt002: tmux/mt002_basestation.yaml
+        mt003: tmux/mt003_basestation.yaml
+        mt004: tmux/mt004_basestation.yaml
+
+        sim: tmux/basestation-sim.start.yaml
+        playback: tmux/basestation.playback.yaml
+        super_odom: tmux/basestation.superodom.start.yaml
+        loop_closure: tmux/basestation.lc_superodom.start.yaml
+      stop: tmux/basestation.stop.yaml
+    logging:
+      default: basestation
+      logs: [ "basetation" ]
+
+  dev.dev:
+    launch:
+      session_name: pt_start
+      default: autonomy
+      launches:
+        autonomy: tmux/pt-orin.start.yaml
+        super_odom: tmux/superodom.start.yaml
+        mso: tmux/mso.start.yaml
+        tare: tmux/tare.yaml
+        collect_data: tmux/collect_data.yaml
+        super_odom_mso: tmux/superodom.mso.start.yaml        
+        ros2: tmux/pt-orin.ros2.yaml  
+
+        mt001: tmux/mt001_rc.yaml
+        mt002: tmux/mt002.yaml
+        mt003: tmux/mt003.yaml
+        mt004: tmux/mt004.yaml
+
+
+      stop: tmux/pt-orin.stop.yaml
+    logging:
+      default: payload_base
+      logs: [ "payload_base", "super_odom", "payload_base", "payload_base","collect_data" ]
+

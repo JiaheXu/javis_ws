@@ -1,0 +1,15 @@
+- echo "hello world"
+
+- hello_world:
+  - pwd
+  - echo "running hello_world section..."
+
+  - hello:
+    - echo "running hello"
+
+  - goodbye:
+    - echo "running goodbye"
+
+  - echo "finishing hello_world"
+
+- pwd

@@ -1,0 +1,28 @@
+# Multicast is used to efficiently
+# identify hosts on the network
+mcast_group: "239.255.99.2"
+mcast_port: 5000
+
+# Delay startup to make sure interfaces are up before broadcasting
+startup_delay: 1.
+
+## Configure the multicast discovery
+# If broadcasting is turned off you can request
+# broadcasts on start.
+request_on_start: true
+# You can also send a single broadcast on start
+broadcast_on_start: true
+# Or broadcast continuously on a set interval
+broadcast_on_interval: 1.
+
+host_files:
+-   file_path: /etc/hosts
+    update_period: 5.
+
+cache_file: /etc/host_info_tools/cache.yaml
+cache_interval: 10.
+cache_timeout: 359200. # ~ 3 days
+
+const_param_files:
+-   /etc/javis/javis.conf
+-   /etc/javis/payload.conf

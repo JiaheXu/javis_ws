@@ -1,0 +1,66 @@
+# Sets up /etc/javis
+- name: Setup Global Configuration
+  gather_facts: no
+  hosts: all
+
+  tasks:
+    - name: Create ~/.local/share/applications
+      file:
+        path: ~/.local/share/applications
+        state: directory
+    
+    - name: Create ~/.local/share/mime/packages
+      file:
+        path: ~/.local/share/mime/packages
+        state: directory
+ 
+    - name: Create ~/.icons
+      file:
+        path: ~/.icons
+        state: directory
+            
+    - name: Copy over javis-icon.png
+      copy:
+        src: ../files/launch/javis-icon.png
+        dest: ~/.icons/javis-icon.png
+
+    - name: Copy over javis.desktop
+      template:
+        src: "../files/launch/{{ item }}"
+        dest: "~/.local/share/applications/{{ item }}"
+      with_items:
+      - javis.desktop
+      - javis_stop.desktop
+      - javis_launch_file.desktop
+      - javis_launch_payloads.desktop
+      - javis_stop_payloads.desktop
+      - javis_sync_payloads.desktop
+    
+    - name: Copy over javis.xml
+      template:
+        src: ../files/launch/javis.xml
+        dest: ~/.local/share/mime/packages/javis.xml
+
+    - name: Create mimeapps.list
+      file:
+        path: ~/.config/mimeapps.list
+        state: touch
+
+    - name: Add default Application type
+      lineinfile:
+        dest: ~/.config/mimeapps.list
+        insertbefore: BOF
+        line: '[Default Applications]'
+
+    - name: Add default Application type
+      lineinfile:
+        dest: ~/.config/mimeapps.list
+        state: present
+        insertafter: '^\t\[Default Applications\]\n'
+        line: 'application/javis-launch=javis_launch_file.desktop'
+  
+    - name: Update mime database
+      shell: update-mime-database ~/.local/share/mime
+
+    - name: Update desktop database
+      shell: update-desktop-database ~/.local/share/applications

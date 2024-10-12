@@ -1,0 +1,3 @@
+- '[ ! -z "$CONTAINER" ] || ( echo "ERROR: CONTAINER not set" && exit 1 )'
+# - docker rm -f $(docker ps -a -q)
+- docker rm -f $CONTAINER || true

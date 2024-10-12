@@ -1,0 +1,12 @@
+[Unit]
+Description=Foward Velodyne Traffic
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/socat TCP-LISTEN:8123,fork TCP:192.168.1.201:80
+Restart=always
+TimeoutSec=60
+
+[Install]
+WantedBy=multi-user.target

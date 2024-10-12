@@ -1,0 +1,35 @@
+# force that docker registry is always done on localhost (since it uses docker-context for remote connection)
+- +local
+
+- '[ ! -z "$AZURE_REGISTRY" ] || ( echo "ERROR: AZURE_REGISTRY not set" && exit 1 )'
+- '[ ! -z "$DOCKER_IMAGE" ] || ( echo "ERROR: DOCKER_IMAGE not set" && exit 1 )'
+# login to the azure docker registry
+- docker context use default
+- az acr login --name javis
+
+- push:
+  # use default docker context
+  - docker context use $DCTX
+  # tag the docker images
+  - docker tag $DOCKER_IMAGE $AZURE_REGISTRY/$DOCKER_IMAGE || true
+  # push the docker images to the local registry
+  - docker push $AZURE_REGISTRY/$DOCKER_IMAGE || true
+  # remove the azure docker images
+  #- docker rmi $(docker images | grep $AZURE_REGISTRY | tr -s ' ' | cut -d ' ' -f 1)
+  - export AZURE_DOCKER_IMAGE_NAME=$(docker images | grep $AZURE_REGISTRY | tr -s ' ' | cut -d ' ' -f 1):$(docker images | grep $AZURE_REGISTRY | tr -s ' ' | cut -d ' ' -f 2)
+  - docker rmi $AZURE_DOCKER_IMAGE_NAME || true
+- pull:
+  # use default docker context
+  - docker context use $DCTX
+  # pull the docker images from the local registry
+  - docker pull $AZURE_REGISTRY/$DOCKER_IMAGE || true
+  # tag the docker images
+  - docker tag $AZURE_REGISTRY/$DOCKER_IMAGE $DOCKER_IMAGE || true
+  # remove the azure docker images
+  - export AZURE_DOCKER_IMAGE_NAME=$(docker images | grep $AZURE_REGISTRY | tr -s ' ' | cut -d ' ' -f 1):$(docker images | grep $AZURE_REGISTRY | tr -s ' ' | cut -d ' ' -f 2)
+  - docker rmi $AZURE_DOCKER_IMAGE_NAME || true
+
+# show the docker images
+- docker images
+# switch back to the default docker context
+- docker context use default

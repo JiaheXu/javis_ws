@@ -1,0 +1,8 @@
+topics:
+- /mt001/distributedMapping/globalDescriptors
+- /mt001/distributedMapping/loopInfo_compressed
+- /mt001/distributedMapping/optimizationState
+- /mt001/distributedMapping/rotationEstimateState
+- /mt001/distributedMapping/poseEstimateState
+- /mt001/distributedMapping/neighborRotationEstimates
+- /mt001/distributedMapping/neighborPoseEstimates

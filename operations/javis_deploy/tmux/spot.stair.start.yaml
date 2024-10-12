@@ -1,0 +1,99 @@
+# The tmux session name, has to be unique
+session_name: pt_start
+
+# Add commands to bash history
+suppress_history: false
+
+# set environment variables
+environment:
+  robot: ${robot}
+
+# starting directory location, to run all commands from
+start_directory: $JAVIS_PATH/
+
+# commands to run before panes startup
+before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -ar -st -- javis_autonomy javis_estimation javis_drivers javis_common
+
+# This is where we list all the stuff we want to run
+windows:
+  - window_name: roscore
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roscore
+
+  - window_name: Drivers
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_drivers
+        - roslaunch --wait javis_drivers_core drivers.launch
+            launch_cameras:=true
+      - shell_command:
+        - docker-join.bash -n javis_drivers
+        - roslaunch --wait javis_drivers_core spot_driver.launch
+
+  - window_name: estimation
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_estimation
+        - roslaunch --wait javis_estimation_core estimation.launch
+            voxel_size:=0.2
+            use_super_odometry:=true
+            launch_rc_vio:=false
+            launch_spot_vio:=false
+            use_loop_closure:=false
+
+  - window_name: autonomy
+    focus: true
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_autonomy
+        - roslaunch --wait javis_autonomy_core autonomy.launch
+            launch_exploration:=false
+            launch_ilqr:=false
+            joystick_speed:=1.0
+            exploration_speed:=1.0
+            waypoint_speed:=1.0
+            manual_speed:=1.0
+
+  # comms manager
+  - window_name: comms manager
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roslaunch --wait communication_manager communication_manager.launch
+
+  # Stair Detection
+  - window_name: Stair Detection
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - roslaunch --wait staircase_manager stair_detector.launch
+
+  - window_name: autocalib
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - mon launch autocalib javis_robot_autocalib.launch
+  
+  - window_name: logging
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - sleep 5
+        - javis-log --log-dir /logging --date-folder

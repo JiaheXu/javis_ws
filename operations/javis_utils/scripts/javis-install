@@ -1,0 +1,335 @@
+#!/usr/bin/env bash
+__dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+eval "$(cat $__dir/../../javis_utils/scripts/header.sh)"
+eval "$(cat $__dir/../../javis_utils/scripts/formatters.sh)"
+
+
+if chk_flag --help $@ || chk_flag help $@ || chk_flag -h $@ || chk_flag -help $@; then
+    title "$__file_name <Install Options> -- < systems >"
+    text "    Installs base system library dependencies, extra tools & sets up system configuration on the selected systems."
+    text "Install Flags:"
+    text "    default   : installs a whole slew of system dependencies and whatnots (when no other flags are passed)"
+    text "  --min       : installs some local configuration required for development (also included in default)"
+    text "  --global    : installs and enables some system services needed for deployment on robots"
+    text "  --payload   : setup payload configuration"
+    text "  --uninstall : uninstall python scripts and the local config"
+    text
+    text "Other Options:"
+    text "  --no-k             : when running on systems that you have ssh-keys set up for, you don't need to enter an ssh password "
+    text "  --pass <password>  : use this sudo password instead of prompting for one"
+    text "  -u <user>          : when running on hosts with no ssh keys set up you will need to set the correct username"
+    text "  --payloads         : rather than specifying hosts, automatically select all connected javis payloads"
+    text "  --connected        : rather than specifying hosts, automatically select all connected javis hosts"
+    text "  --ws-path <path> : if you are running a system that has a clean version of code but no install to get the javis_path from - use this to set it"
+    text
+    text "    systems          : comma delimited names of the systems to install on"
+    text "                       if none are provided it will default to localhost,"
+    text
+    text "Flags for default install & --min"
+    text "  --enable-hit      : enable the host info server (even if it wasn't previously running)"
+    text
+    text "Flags for default install"
+    text "  --anydesk         : for basestations you usually want to install anydesk - this automates this"
+    text "  --ad-pass <pass>  : allows you to set the anydesk password programmatically (when --anydesk is also passed)"
+    text
+    text "NOTE: when running on multiple systems they must all have the same sudo password"
+    text "      and when no ssh keys are setup, the same user and password are required too"
+    text "For more help, please see the README.md or wiki."
+    exit_success
+fi
+
+# //////////////////////////////////////////////////////////////////////////////
+# @brief run the ansible robot playbook
+# //////////////////////////////////////////////////////////////////////////////
+main JAVIS Ansible PlayBooks
+text_color About to run the JAVIS ansible playbooks on selected systems.
+text_color you may be prompted for a sudo password. If running on multiple
+text_color systems the password must be the same across all platforms.
+
+system_names=""
+def_system_id=$HOSTNAME
+KARGS="-k"
+RUSERNAME="-u $USER"
+if chk_flag --connected $@ ; then
+    javis_names=$(javis-hosts complete_helper --comma-delim)
+    if ! last_command_failed; then
+        system_names=$javis_names
+        KARGS=""
+        RUSERNAME=""
+    fi
+elif chk_flag --payloads $@ ; then
+    javis_names=$(javis-hosts complete_helper --payloads --comma-delim)
+    if ! last_command_failed; then
+        system_names=$javis_names
+        KARGS=""
+        RUSERNAME=""
+    fi
+else
+    sidx=$(($(get_idx -- $@) + 2))
+    if ! last_command_failed; then
+        def_system_id=${@:$sidx}
+        for name in "${@:$sidx}"; do
+            system_names="$name,$system_names"
+        done
+    fi
+fi
+if [[ -z $system_names ]]; then
+    system_names="localhost,"
+fi
+
+SAN_SYS_ID=${def_system_id// /_}
+SAN_SYS_ID=${SAN_SYS_ID//-/_}
+SAN_SYS_ID=${SAN_SYS_ID//[^a-zA-Z0-9_]/}
+def_system_id=$SAN_SYS_ID
+
+ORUSERNAME=""
+PASSARGS="--ask-become-pass"
+addition_args=""
+if chk_flag -u $@; then
+    idxs=$(getidx -u $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ -z $val ]] || [[ ${val:0:1} == "-" ]]; then
+        echo "Invalid username: [$val]"
+        exit 1
+    fi
+    RUSERNAME=""
+    ORUSERNAME="-u $val"
+fi
+if chk_flag --pass $@; then
+    idxs=$(getidx --pass $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ -z $val ]] || [[ ${val:0:1} == "-" ]]; then
+        echo "Invalid username: [$val]"
+        exit 1
+    fi
+    PASSARGS=""
+    addition_args="ansible_become_pass=$val"
+fi
+if chk_flag --no-k $@; then
+    KARGS=""
+    RUSERNAME=""
+fi
+if chk_flag --anydesk $@ ; then
+    addition_args="$addition_args install_anydesk=True"
+fi
+if chk_flag --ad-pass $@ ; then
+    idxs=$(getidx --ad-pass $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ -z $val ]] || [[ ${val:0:1} == "-" ]]; then
+        echo "Invalid anydesk password: [$val]"
+        exit 1
+    fi
+    addition_args="$addition_args set_anydesk_password=True anydesk_password=$val"
+fi
+
+JAVIS_PATH_OVRIDE=false
+if chk_flag --ws-path $@ ; then
+    idxs=$(getidx --ws-path $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ -z $val ]] || [[ ${val:0:1} == "-" ]]; then
+        echo "JAVIS Path: [$val]"
+        exit 1
+    fi
+    JAVIS_PATH_OVRIDE=true
+    addition_args="$addition_args javis_path=$val"
+fi
+
+if [[ $system_names == "localhost," ]] && [ ! -z $JAVIS_PATH ] && [ ! $JAVIS_PATH_OVRIDE == true ]; then
+    addition_args="$addition_args javis_path=$JAVIS_PATH"
+fi
+
+# which python2 > /dev/null
+# if [ $? == 1 ]; then
+#     echo "Unable to find python2 on the system, installing."
+#     echo "You may be prompted for your password"
+#     sudo apt install -y python2
+# fi
+
+# which python2.7 > /dev/null
+# if [ $? == 1 ]; then
+#     echo "Unable to find python2.7 on the system, installing."
+#     echo "You may be prompted for your password"
+#     sudo apt install -y python2.7
+# fi
+
+
+which ansible > /dev/null
+if [ $? == 1 ]; then
+    echo "Unable to find ansible on the system, installing."
+    echo "You may be prompted for your password"
+    sudo apt install -y ansible
+fi
+which sshpass > /dev/null
+if [ $? == 1 ]; then
+    echo "Unable to find sshpass on the system, installing."
+    echo "You may be prompted for your password"
+    sudo apt install -y sshpass
+fi
+dpkg --list | grep -q openssh-server
+if [ $? == 1 ]; then
+    echo "Unable to find openssh-server on the system, installing."
+    echo "You may be prompted for your password"
+    sudo apt install -y openssh-server
+fi
+
+echo
+echo "Selected systems: $system_names"
+echo
+
+warning "Please enter the password for the target system(s)"
+function run_book() {
+    cd $__dir/../../javis_ansible
+    export ANSIBLE_HOST_KEY_CHECKING=False
+    ansible-playbook $KARGS $RUSERNAME $ORUSERNAME $PASSARGS -i $system_names playbooks/$1.yaml --extra-vars="$addition_args" --extra-vars="$2"
+    code=$?
+    if [ $code != 0 ]; then
+        cd $__call_dir
+        echo
+        echo
+        error "Installation did not complete successfully!"
+        error "Please attempt the same command again."
+        error "If it fails again please consult docs/common_errors.md"
+        error "If you can't find anything then contact the maintainer (currently $JAVIS_MAINTAINER)"
+        echo
+        echo
+        exit $code
+    fi
+}
+
+hit_args=""
+if chk_flag --enable-hit $@ ; then
+    hit_args="enable_host_info_server=True"
+fi
+if chk_flag --uninstall $@ ; then
+    warn=false
+    if [[ $(echo $system_names | tr -cd , | wc -c) > 1 ]]; then
+        warning "Attenting to uninstall on multiple hosts!"
+        warn=true
+    elif [[ $system_names != "localhost," ]]; then
+        warning "Attempting to uninstall on non-localhost!"
+        warn=true
+    fi
+    if [[ $warn == true ]]; then
+        if ! yesno "Are you sure you want to procede?" n; then
+            exit
+        fi
+    fi
+   run_book uninstall
+elif chk_flag --min $@ ; then
+    run_book install_min "$hit_args"
+elif chk_flag --payload $@ ; then
+    PAYLOAD_SERIAL="$def_system_id"
+    echo
+    title "Setting the Payload Serial"
+    text_color "This unique payload serial should distinguish the payload a computer is on."
+    text_color "If two computers are in the same payload then this should be the same for them."
+    PAYLOAD_SERIAL=$(read_text "Payload Serial:" $PAYLOAD_SERIAL)
+
+    PAYLOAD_TYPE="javis_v3"
+    echo
+    title "Setting the Payload Type"
+    text_color "The payload type should uniquely identify the hardware"
+    text_color "capability of the payload this computer is in."
+    PAYLOAD_TYPE=$(read_text "Payload Type:" $PAYLOAD_TYPE)
+
+    run_book setup_payload "payload_type=$PAYLOAD_TYPE payload_serial=$PAYLOAD_SERIAL"
+elif chk_flag --global $@ ; then
+    warn=false
+    if [[ $(echo $system_names | tr -cd , | wc -c) > 1 ]]; then
+        warning "Attenting to install globally on multiple hosts!"
+        warn=true
+    fi
+    if [[ $warn == true ]]; then
+        if ! yesno "Are you sure you want to procede?" n; then
+            exit
+        fi
+    fi
+
+    echo "The global config determines how this system identifies and interacts with others."
+    HOSTNAME=$HOSTNAME
+    SYSTEM_ID=$HOSTNAME
+    SYSTEM_TYPE=basestation
+    SYSTEM_COMPONENT=dev
+    if [ -z $JAVIS_DEFAULT_SYSTEM_ID ]; then
+        sys_id_set=false
+        while [ $sys_id_set == false ]; do
+            echo
+            title "Setting the System ID"
+            text_color "This unique System ID is used to identify different entities."
+            text_color "Be careful when setting this, the ID must be ${FG_YELLOW}unique${FG_COLOR_TEXT}, contain ${FG_YELLOW}only${FG_COLOR_TEXT}"
+            text_color "${FG_YELLOW}alphanumeric${FG_COLOR_TEXT} characters, ${FG_YELLOW}forward slashes${FG_COLOR_TEXT} and ${FG_YELLOW}underscores${FG_COLOR_TEXT}"
+            echo
+            SYSTEM_ID=$(read_text "JAVIS System ID:" $def_system_id)
+
+            SAN_SYS_ID=${SYSTEM_ID// /_}
+            SAN_SYS_ID=${SAN_SYS_ID//-/_}
+            SAN_SYS_ID=${SAN_SYS_ID//[^a-zA-Z0-9_]/}
+            if [ $SAN_SYS_ID != $SYSTEM_ID ]; then
+                echo
+                error "Selected System ID [$SYSTEM_ID] was not ROS-safe."
+                text_color "We have sanitized it and will use the System ID [$SAN_SYS_ID]"
+                if ! yesno "Would you like enter a different System ID instead of the sanitized one?" n; then
+                    SYSTEM_ID=$SAN_SYS_ID
+                    sys_id_set=true
+                fi
+            else
+                sys_id_set=true
+            fi
+        done
+    else
+        SAN_SYS_ID=${JAVIS_DEFAULT_SYSTEM_ID// /_}
+        SAN_SYS_ID=${SAN_SYS_ID//-/_}
+        SAN_SYS_ID=${SAN_SYS_ID//[^a-zA-Z0-9_]/}
+        SYSTEM_ID=$SAN_SYS_ID
+    fi
+    if [ -z $JAVIS_DEFAULT_SYSTEM_TYPE ]; then
+        echo
+        title "Setting the System Type"
+        set_correctly=false
+        while [ $set_correctly == false ]; do
+            text_color "The system type determines what information needs to be passed"
+            text_color "to/from this host."
+            text_color "Valid options: "
+            text_color "     basestation           (unless you are a payload, you want this)"
+            text_color "     rc                    (a mobile platform controlled by the payload)"
+            text_color "     spot                  (an javis payload mounted on spot)"
+            text_color "     mapping               (a lonely javis payload not mounted on anything)"
+            SYSTEM_TYPE=$(read_text "JAVIS System Type:" basestation)
+
+            if [ $SYSTEM_TYPE == "basestation" ] || [ $SYSTEM_TYPE == "rc" ] || [ $SYSTEM_TYPE == "spot" ] || [ $SYSTEM_TYPE == "mapping" ]; then
+                set_correctly=true
+            else
+                error "Invalid system type."
+            fi
+        done
+    else
+        SYSTEM_TYPE=$JAVIS_DEFAULT_SYSTEM_TYPE
+    fi
+    if [ -z $JAVIS_DEFAULT_SYSTEM_COMPONENT ]; then
+        echo
+        title "Setting the System Component"
+        text_color "In multi-host systems (eg: some spot deployments) this value"
+        text_color "gives which purpose this host fulfills (eg: mapping or planning)."
+        text_color "At the time of writing this - there are no multi-host systems."
+        text_color ""
+        text_color "Valid options: "
+        text_color "     orin                (an orin computer in a payload)"
+        text_color "     dev                   (any development computer, choose this!)"
+        SYSTEM_COMPONENT=$(read_text "JAVIS System Component:" dev)
+
+        if [ $SYSTEM_COMPONENT == "orin" ] || [ $SYSTEM_COMPONENT == "dev" ]; then
+            set_correctly=true
+        else
+            error "Invalid system type, defaulting to 'dev'."
+            SYSTEM_COMPONENT=dev
+        fi
+    else
+        SYSTEM_COMPONENT=$JAVIS_DEFAULT_SYSTEM_COMPONENT
+    fi
+
+
+    run_book install_global "javis_system_type=$SYSTEM_TYPE javis_system_component=$SYSTEM_COMPONENT javis_system_id=$SYSTEM_ID"
+
+else
+    run_book install "$hit_args"
+fi

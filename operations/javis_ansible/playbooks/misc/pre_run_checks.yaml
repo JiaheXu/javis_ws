@@ -1,0 +1,32 @@
+---
+# ////////////////////////////////////////////////////////////////////////
+# install & setup robot host system packages
+# ////////////////////////////////////////////////////////////////////////
+- name: Preliminary Checks
+  hosts: all
+  gather_facts: False
+
+  tasks:
+    # ////////////////////////////////////////////////////////////////////////
+    # Install Base Packages
+    # ////////////////////////////////////////////////////////////////////////
+    - name: Check that sudo password is correct.
+      block:
+        - name: Try to become sudo
+          become: true
+          shell: echo "hello world"
+      rescue:
+        - name: Error message
+          fail:
+            msg: Incorrect sudo password given?
+  
+    - name: Check that apt update works
+      block:
+        - name: Try to apt update
+          become: true
+          apt:
+            update_cache: yes
+      rescue:
+        - name: Error message
+          fail:
+            msg: apt update failed, trying running command manually and fix errors

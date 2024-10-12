@@ -1,0 +1,12 @@
+#############################################################
+# Required Environment Variabls:
+# - JAVIS_COMMON_DIR: location of javis_common src directory
+# - JAVIS_BUILD_PROFILE: profile to catkin config to
+#############################################################
+- '[ ! -z "$JAVIS_COMMON_DIR" ] || ( echo "ERROR: JAVIS_COMMON_DIR not set" && exit 1 )'
+- '[ ! -z "$JAVIS_BUILD_PROFILE" ] || ( echo "ERROR: JAVIS_BUILD_PROFILE not set" && exit 1 )'
+- core:
+  - CATKIN_DIR=$JAVIS_COMMON_DIR
+  - CATKIN_PROFILE=$JAVIS_BUILD_PROFILE
+  - +extend: actions/catkin/build
+  - +extend: actions/catkin/clean

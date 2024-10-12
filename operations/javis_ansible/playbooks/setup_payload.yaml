@@ -1,0 +1,75 @@
+# This book is for setting up payload information from which payload facts are sourced.
+#
+# To run this book make sure the following variables are set:
+# - payload_type
+# - payload_serial
+- include: misc/pre_run_checks.yaml
+
+- name: Setup Payload Facts
+  gather_facts: no
+  hosts: all
+
+  tasks:
+    - name: Check for payload_type variable
+      fail:
+        msg: payload_type is not defined
+      when: payload_type is not defined
+    
+    - name: Check for payload_serial variable
+      fail:
+        msg: payload_serial is not defined
+      when: payload_serial is not defined
+
+    - debug:
+        var: payload_type
+    - debug:
+        var: payload_serial
+
+    - name: Create /etc/payload
+      file:
+        path: "/etc/payload"
+        state: directory
+        mode: '0755'
+      become: true
+
+    - name: Make /etc/payload/type mutable
+      file:
+        path: "/etc/payload/type"
+        state: touch
+        owner: root
+        mode: u=r,g=r,o=r
+        attr: -i
+      become: true
+
+    - name: Make /etc/payload/serial mutable
+      file:
+        path: "/etc/payload/serial"
+        state: touch
+        owner: root
+        mode: u=r,g=r,o=r
+        attr: -i
+      become: true
+
+    - name: Create /etc/payload/type
+      shell: "echo {{ payload_type }} > /etc/payload/type"
+      become: true
+
+    - name: Create /etc/payload/serial
+      shell: "echo {{ payload_serial }} > /etc/payload/serial"
+      become: true
+
+    - name: Set /etc/payload/type to read-only
+      file:
+        path: "/etc/payload/type"
+        owner: root
+        attr: +i
+        mode: u=r,g=r,o=r
+      become: true
+
+    - name: Set /etc/payload/serial to read-only
+      file:
+        path: "/etc/payload/serial"
+        owner: root
+        mode: u=r,g=r,o=r
+        attr: +i
+      become: true

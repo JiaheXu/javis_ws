@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=true
+Exec=bash -c '(source ~/.javis/auto/javis_redirect.bash && javis launch --stop --payloads) || (echo "Launch Failed :(" && sleep 10)'
+Name=Payloads Stop
+Comment=Stop all connected Payloads
+Name[en]=Payloads Stop
+Comment[en]=Stop all connected Payloads
+Icon=javis-icon.png

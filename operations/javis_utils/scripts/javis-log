@@ -1,0 +1,301 @@
+#!/usr/bin/env python3
+import host_info_tools as hit
+from host_info_tools import argparse as hit_ap
+import os
+import sys
+import yaml
+import jinja2
+import shutil
+from datetime import datetime
+import shlex
+import subprocess
+import rospy
+import psutil
+
+
+if "JAVIS_OPERATIONS" in os.environ:
+    default_log_config = os.path.join(os.environ["JAVIS_OPERATIONS"], "javis_deploy", "workspace_config.yaml")
+else:
+    print("JAVIS_OPERATIONS variable is not set. Unable to run.")
+    exit(1)
+
+system_type = None
+system_component = None
+
+if "JAVIS_SYSTEM_ID" in os.environ:
+    system_id = os.environ["JAVIS_SYSTEM_ID"]
+if "JAVIS_SYSTEM_TYPE" in os.environ:
+    system_type = os.environ["JAVIS_SYSTEM_TYPE"]
+if "JAVIS_SYSTEM_COMPONENT" in os.environ:
+    system_component = os.environ["JAVIS_SYSTEM_COMPONENT"]
+
+def cmd_to_file(cmd, file):
+    try:
+        data = subprocess.check_output(shlex.split(cmd))
+        with open(file, "wb+") as f:
+            f.write(data)
+    except Exception as err:
+        print("Unable to write [%s] to [%s]: %s"%(cmd, file, str(err)))
+
+class Bag():
+    name = ""
+    split = None
+    topics = []
+
+class FCSync():
+    sync_files = []
+    start_files = []
+    start_cmds = []
+
+def resolve_topics(config_path, log_config, name, verbose=False):
+    topics = []
+    bd = os.path.split(config_path)[0]
+
+    if "bags" not in log_config[name]:
+        print("Unable to resolve config [%s], no bags set."%name)
+        exit(1)
+
+    fcsync = FCSync()
+    fcsync.sync_files = []
+    if "sync_files" in log_config[name]:
+        fcsync.sync_files = log_config[name]["sync_files"]
+    fcsync.start_files = []
+    if "start_files" in log_config[name]:
+        fcsync.start_files = log_config[name]["start_files"]
+    fcsync.start_cmds = []
+    if "start_cmds" in log_config[name]:
+        fcsync.start_cmds = log_config[name]["start_cmds"]
+
+    bags = []
+    for bag_definition in log_config[name]["bags"]:
+        nb = Bag()
+        nb.name = ""
+        nb.split = None
+        if "name" in bag_definition:
+            nb.name = bag_definition["name"]
+        if "split" in bag_definition:
+            nb.split = bag_definition["split"]
+
+        if "topics" not in bag_definition:
+            print("  Unable to load topics from [%s] for a bag."%name)
+            continue
+
+        for topic_file in bag_definition["topics"]:
+            topic_file = os.path.join(bd, topic_file)
+
+            if verbose:
+                print("Loading topics from: %s"%topic_file)
+            try:
+                with open(topic_file, 'r') as f:
+                    topic_list = yaml.load(f, Loader=yaml.FullLoader)["topics"]
+                    for topic in topic_list:
+                        if topic[0] == "/":
+                            topics.append(topic)
+                        else:
+                            topics.append("/%s/%s"%(system_id, topic))
+            except Exception as err:
+                print("  Unable to load topics from [%s](%s), ignoring file."%(topic_file, str(err)))
+            nb.topics = topics
+        bags.append(nb)
+    return bags, fcsync
+
+if __name__ == "__main__":
+    ap = hit_ap.Arguments(["config_file", "config", "system-id", "system-type", "system-component", "log-dir"])
+    ap.parse_arguments(sys.argv[1:])
+    log_config_path = ap.get_flag_value(["config_file"], default_log_config)
+    log_dir = ap.get_flag_value(["log-dir"], os.getcwd())
+    system_id = ap.get_flag_value(["system-id"], system_id)
+    system_type = ap.get_flag_value(["system-type"], system_type)
+    system_component = ap.get_flag_value(["system-component"], system_component)
+    topic_config = ap.get_flag_value(["config"], None)
+    dry = ap.get_flag_boolean(['dry'])
+    stop = ap.get_flag_boolean(['stop'])
+    date = ap.get_flag_boolean(['date-folder'])
+    no_run = ap.get_flag_boolean(['no-run-folder'])
+    list_flag = ap.get_flag_boolean(['list'])
+    topics_flag = ap.get_flag_boolean(['topics'])
+    help_flag = ap.get_flag_boolean(['help', 'h'])
+
+    if help_flag:
+        print("No help message as of yet. Check docs/ please.")
+
+    if system_type is None or system_component is None or system_id is None:
+        print("Error: Unable to get a system information")
+        print("       Make sure javis is properly installed.")
+        exit(1)
+
+    if stop:
+        try:
+            for i in range(10):
+                subprocess.check_output(shlex.split("rosnode kill /rosbag_recording_%s_%s_%s_%d"%(system_id, system_type, system_component, i)))
+        except Exception as err:
+            exit(1)
+        exit()
+
+    log_config = None
+    if os.path.exists(log_config_path):
+        try:
+            with open(log_config_path, 'r') as f:
+                log_config = yaml.load(f, Loader=yaml.FullLoader)
+        except Exception as err:
+            pass
+    if log_config is None:
+        print("Error loading log config at %s"%log_config_path)
+        exit(1)
+
+    hosts_config = log_config["hosts"]
+    log_config = log_config["log"]
+
+    full_system_type = "%s.%s"%(system_type, system_component)
+    if full_system_type not in hosts_config:
+        print("Error: description for [%s] is not in config, unable to log for %s"%(system_type, system_id))
+        exit(1)
+
+    host_cfg = hosts_config[full_system_type]
+    if "logging" not in host_cfg:
+        print("Error: host type [%s] does not have logging set up."%(full_system_type))
+        exit(1)
+
+    # List topics in config
+    if list_flag and topics_flag:
+        if topic_config is None:
+            print("Please supply --config <config> to list topics.")
+            exit(1)
+        if topic_config not in log_config:
+            print("Unknown log config: %s"%topic_config)
+        else:
+            bags, fcsync = resolve_topics(log_config_path, log_config, topic_config)
+            for bag in bags:
+                print("Bag `%s`:"%bag.name)
+                if len(bag.topics) <= 0:
+                    print("  No topics. Check config for errors.")
+                for topic in bag.topics:
+                    print("  %s"%topic)
+        exit()
+    # List available configs
+    if list_flag:
+        if "logs" not in host_cfg["logging"]:
+            print("No logs to list for host.")
+            exit(0)
+        default_config = ""
+        if "default" in host_cfg["logging"]:
+            default_config = host_cfg["logging"]["default"]
+        print("Configs for [%s]:"%(full_system_type))
+        for k in host_cfg["logging"]["logs"]:
+            if k == default_config:
+                print("    %-20s (default)"%k)
+            else:
+                print("    %-20s"%k)
+        exit()
+
+    # If we get here we are recording!
+    if topic_config is None:
+        if "default" not in host_cfg["logging"]:
+            print("No default logging config set, please set --config <config> explicitly for [%s]"%full_system_type)
+            exit(1)
+        topic_config = host_cfg["logging"]["default"]
+    
+    if topic_config not in log_config:
+        print("Error: config [%s] for found in config :("%topic_config)
+        exit(1)
+
+    bags, fcsync = resolve_topics(log_config_path, log_config, topic_config)
+
+
+    i = 0
+    node_name = "rosbag_recording_%s_%s_%s_%d"%(system_id, system_type, system_component, i)
+    valid_commands = []
+    for bag in bags:
+        i += 1
+        if len(bag.topics) == 0:
+            print("Error: %s (%s.%s) has no topics listed in bag %s."%(system_id, system_type, system_component, bag.name))
+            continue
+
+        command = "rosbag record __name:=rosbag_recording_%s_%s_%s_%d -b 1024 --regex"%(system_id, system_type, system_component, i)
+        if bag.name != "":
+            command += " -o %s"%bag.name
+        if bag.split is not None:
+            command += " --split --size %s"%str(bag.split)
+        command += " %s"%(" ".join(bag.topics))
+        valid_commands.append(command)
+
+    if len(valid_commands) <= 0:
+        exit(1)
+
+
+    if dry:
+        print("Generated the following bag commands:")
+        for c in valid_commands:
+            print("%s\n"%c)
+        exit()
+
+    rospy.init_node(node_name)
+
+    if date:
+        now = datetime.now()
+        dfolder = now.strftime("%Y-%m-%d")
+        log_dir = os.path.join(log_dir, dfolder)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    if not no_run:
+        for i in range(100):
+            nfolder_name = os.path.join(log_dir, "run_%d"%i)
+            if not os.path.exists(nfolder_name):
+                log_dir = nfolder_name
+                os.makedirs(log_dir)
+                break
+    bags_folder = os.path.join(log_dir, "bags")
+    system_folder = os.path.join(log_dir, "system")
+    if not os.path.exists(bags_folder):
+        os.makedirs(bags_folder)
+    if not os.path.exists(system_folder):
+        os.makedirs(system_folder)
+
+    print("Beginning to record to [%s]"%log_dir)
+    processes = []
+    for c in valid_commands:
+        try:
+            np = subprocess.Popen(shlex.split(c), cwd=bags_folder)
+            processes.append(np)
+        except Exception as err:
+            print("Unable to start bag: %s"%str(err))
+    for f in fcsync.start_files:
+        fdest = fcsync.start_files[f]
+        print("Copying %s to %s"%(f, fdest))
+        try:
+            shutil.copyfile(f, os.path.join(system_folder, fdest))
+        except Exception as err:
+            print("Unable to copy [%s]: %s"%(f, str(err)))
+
+    for c in fcsync.start_cmds:
+        cdest = fcsync.start_cmds[c]
+        print("Saving command output [%s] to %s"%(c, cdest))
+        cmd_to_file(c, os.path.join(system_folder, cdest))
+
+    r = rospy.Rate(1)
+    while not rospy.is_shutdown():
+        for f in fcsync.sync_files:
+            fdest = fcsync.start_files[f]
+            try:
+                shutil.copyfile(f, os.path.join(system_folder, fdest))
+            except Exception as err:
+                print("Unable to copy [%s]: %s"%(f, str(err)))
+
+        r.sleep()
+
+    print("Performing final sync")
+    for f in fcsync.sync_files:
+        fdest = fcsync.start_files[f]
+        try:
+            shutil.copyfile(f, os.path.join(system_folder, fdest))
+        except Exception as err:
+            print("Unable to copy [%s]: %s"%(f, str(err)))
+
+    print("Killing subprocesses")
+    for p in processes:
+        if p.poll() is not None:
+            continue
+        proc = psutil.Process(p.pid)
+        for ps in proc.children(recursive=True):
+            ps.terminate()
+        proc.terminate()

@@ -1,0 +1,336 @@
+#!/usr/bin/env bash
+__dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+eval "$(cat $__dir/../../javis_utils/scripts/header.sh)"
+eval "$(cat $__dir/../../javis_utils/scripts/formatters.sh)"
+
+if [[ ! -z $JAVIS_OPERATIONS ]]; then
+    DEFAULT_CONFIG=$JAVIS_OPERATIONS/javis_deploy/workspace_config.yaml
+fi
+
+if chk_flag --help $@ || chk_flag help $@ || chk_flag -h $@ || chk_flag -help $@; then
+    title "$__file_name <options> [ -- <targets> ]"
+    text_color "  Launches "
+    text_color "Options:"
+    text_color "  --stop            : stop any existing launches on targets"
+    text_color "  --attach          : attach to a specified launch (overrides --launch, --detach)"
+    text_color "  --detach          : detach after --launch (default when launching multiple systems)"
+    text_color "  --launch <launch> : which launch configuration to use - corresponds to an entry in the config"
+    text_color "                      if left empty it will default to 'default' which is totally fine :)"
+    text_color "  --remote-detach   : detach all clients connected to a system (overrides --launch, --detach, --attach)"
+    text_color "    targets         : ssh targets to launch on"
+    text_color "                      these targets must have javis installed globally"
+    text_color "                      if no targets are specified it defaults to localhost"
+    text_color ""
+    text_color "Other Options:"
+    text_color "   --config <config files>  : use a different config file than the default"
+    text_color "   --connected              : rather than specifying targets, poll javis hosts to see which"
+    text_color "                              hosts are connected and launch on all of them"
+    text_color "   --payloads               : rather than specifying targets, poll javis hosts to see which"
+    text_color "                              hosts are payloads and launch on all of them"
+    text_color "   --dry                    : connect to hosts to launch, but do not actually launch"
+    text_color "   --list                   : list valid options for --launch (overrides --launch, --detach, --attach)"
+    text_color "   --sessions               : list running tmux sessions (overrides --launch, --detach, --attach)"
+    text_color "   --session <session_name> : for use with --attach, specify the session name to attach to explicitly"
+    text_color "   --file    <config file>  : load and launch from a particular launch version"
+    exit_success
+fi
+
+if chk_flag --file $@ ; then
+    idxs=$(getidx --file $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ ! -z $val ]] && [[ ! ${val:0:1} == "-" ]]; then
+        if [ ! -e $val ]; then
+            error "Error: file [$val] does not exist :("
+            exit 1
+        fi
+        args=$(cat $val | shyaml get-value "arguments" 2> /dev/null)
+        $__file_path $args
+        exit $?
+    else
+        echo "Invalid --file, "
+        exit 1
+    fi
+fi
+
+system_names=""
+if chk_flag --connected $@ ; then
+    javis_names=$(javis-hosts complete_helper)
+    if ! last_command_failed; then
+        system_names=$javis_names
+        KARGS=""
+        RUSERNAME=""
+    fi
+elif chk_flag --payloads $@ ; then
+    javis_names=$(javis-hosts complete_helper --payloads)
+    if ! last_command_failed; then
+        system_names=$javis_names
+        KARGS=""
+        RUSERNAME=""
+    fi
+else
+    sidx=$(($(get_idx -- $@) + 2))
+    if ! last_command_failed; then
+        def_system_id=${@:$sidx}
+        for name in "${@:$sidx}"; do
+            if [[ -z $system_names ]]; then
+                system_names="$name"
+            else
+                system_names="$name $system_names"
+            fi
+        done
+    fi
+fi
+if [[ -z $system_names ]]; then
+    system_names="localhost"
+fi
+
+# Arguments that get passed to javis-launch call on remote hosts
+ssh_args=""
+
+LAUNCH="default"
+LAUNCH_SET=false
+if chk_flag --launch $@; then
+    idxs=$(getidx --launch $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ -z $val ]] || [[ ${val:0:1} == "-" ]]; then
+        echo "Invalid launch: [$val]"
+        exit 1
+    fi
+    LAUNCH="$val"
+    LAUNCH_SET=true
+fi
+# Put in separate value that can be overrided before it gets added to ssh_args
+ssh_launch_arg="--launch $LAUNCH"
+
+CONFIG=$DEFAULT_CONFIG
+if chk_flag --config $@; then
+    idxs=$(getidx --config $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ -z $val ]] || [[ ${val:0:1} == "-" ]]; then
+        echo "Invalid config: [$val]"
+        exit 1
+    fi
+    CONFIG="$val"
+    ssh_args="$ssh_args --config $CONFIG"
+fi
+if [[ -z $CONFIG ]]; then
+    error "Invalid config! $CONFIG"
+    exit 1
+fi
+
+SESSION=""
+if chk_flag --session $@; then
+    idxs=$(getidx --session $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ -z $val ]] || [[ ${val:0:1} == "-" ]]; then
+        echo "Invalid session: [$val]"
+        exit 1
+    fi
+    SESSION="$val"
+    ssh_args="$ssh_args --session $SESSION"
+fi
+if [[ -z $CONFIG ]]; then
+    error "Invalid config! $CONFIG"
+    exit 1
+fi
+
+DETACH=false
+if chk_flag --detach $@; then
+    DETACH=true
+fi
+if [[ "$system_names" =~ \ |\' ]]; then   #  slightly more readable: if [[ "$string" =~ ( |\') ]]
+    DETACH=true
+fi
+if [[ $DETACH == true ]]; then
+    ssh_args="$ssh_args --detach"
+fi
+
+STOP=false
+if chk_flag --stop $@; then
+    STOP=true
+    ssh_args="$ssh_args --stop"
+    ssh_launch_arg=""
+fi
+
+FORCE_DETACH=false
+if chk_flag --remote-detach $@; then
+    FORCE_DETACH=true
+    ssh_args="$ssh_args --remote-detach"
+    ssh_launch_arg=""
+fi
+
+DRY=false
+if chk_flag --dry $@; then
+    DRY=true
+    ssh_args="$ssh_args --dry"
+fi
+
+LIST=false
+if chk_flag --list $@; then
+    LIST=true
+    ssh_args="$ssh_args --list"
+    ssh_launch_arg=""
+fi
+
+SESSIONS=false
+if chk_flag --sessions $@; then
+    SESSIONS=true
+    ssh_args="$ssh_args --sessions"
+    ssh_launch_arg=""
+fi
+
+ATTACH=false
+if chk_flag --attach $@; then
+    ATTACH=true
+    ssh_args="$ssh_args --attach"
+    ssh_launch_arg=""
+fi
+if [[ "$system_names" =~ \ |\' ]]; then   #  slightly more readable: if [[ "$string" =~ ( |\') ]]
+    if [[ $ATTACH == true ]]; then
+        warning "Unable to attach when dealing with multiple systems!"
+        exit 1
+    fi
+fi
+
+## On a remote system we require the launch tag to be explicitly set
+## This way if a new option is added locally that doesn't launch
+## Remote systems won't default to launching since it doesn't have
+## that new option yet
+REQUIRE_LAUNCH_SET=false
+if chk_flag --requre-explicit-launch $@; then
+    REQUIRE_LAUNCH_SET=true
+fi
+## If we get here an no options have override the explicit launch
+## then the explicit launch tag WILL be passed to remote hosts :)
+ssh_args="$ssh_args $ssh_launch_arg"
+
+# We can tell remote hosts which name to use in printouts (if we refer to them by ssh alias)
+NAME=$HOSTNAME
+if chk_flag --name $@; then
+    idxs=$(getidx --name $@)
+    val=$(get_arg_val $((idxs+1)) $@)
+    if [[ -z $val ]] || [[ ${val:0:1} == "-" ]]; then
+        echo "Invalid name: [$val]"
+        exit 1
+    fi
+    NAME="$val"
+fi
+
+for host in ${system_names}; do
+
+    if [[ $host == "localhost" ]]; then
+        system_type=$JAVIS_SYSTEM_TYPE
+        system_component=$JAVIS_SYSTEM_COMPONENT
+
+        if [[ $LIST == true ]]; then
+            DEFAULT_LAUNCH=$(cat $CONFIG | shyaml get-value "hosts.$JAVIS_SYSTEM_TYPE\\.$JAVIS_SYSTEM_COMPONENT.launch.default" 2> /dev/null)
+            main "Listing valid launches for $JAVIS_SYSTEM_TYPE.$JAVIS_SYSTEM_COMPONENT on $NAME"
+            for launch in $(cat $CONFIG | shyaml keys "hosts.$JAVIS_SYSTEM_TYPE\\.$JAVIS_SYSTEM_COMPONENT.launch.launches" 2> /dev/null); do
+                relpath_tmux_file=$(cat $CONFIG | shyaml get-value "hosts.$JAVIS_SYSTEM_TYPE\\.$JAVIS_SYSTEM_COMPONENT.launch.launches.$launch" 2> /dev/null)
+
+                if [[ $launch == $DEFAULT_LAUNCH ]]; then
+                    launch="$launch (default)"
+                fi
+                printf "%-25s : %s\n" "$launch" "$relpath_tmux_file"
+
+                tmux_file=$(dirname $CONFIG)/$relpath_tmux_file
+                if [ ! -e $tmux_file ]; then
+                    error "Configuration yaml [$tmux_file] for $JAVIS_SYSTEM_TYPE.$JAVIS_SYSTEM_COMPONENT.$LAUNCH on $NAME does not exist"
+                    error "Make sure all files are properly transfered to system."
+                fi
+            done
+        elif [[ $SESSIONS == true ]]; then
+            main "Listing tmux sessions on $NAME"
+            tmux ls
+        elif [[ $FORCE_DETACH == true ]]; then
+            if [[ -z $SESSION ]]; then
+                SESSION=$(cat $CONFIG | shyaml get-value "hosts.$JAVIS_SYSTEM_TYPE\\.$JAVIS_SYSTEM_COMPONENT.launch.session_name" 2> /dev/null)
+                if [[ -z $SESSION ]]; then
+                    error "No session name set for this configuration."
+                    exit 1
+                fi
+            fi
+            tmux detach-client -s $SESSION
+        elif [[ $ATTACH == true ]]; then
+            if [[ -z $SESSION ]]; then
+                SESSION=$(cat $CONFIG | shyaml get-value "hosts.$JAVIS_SYSTEM_TYPE\\.$JAVIS_SYSTEM_COMPONENT.launch.session_name" 2> /dev/null)
+                if [[ -z $SESSION ]]; then
+                    error "No session name set for this configuration."
+                    exit 1
+                fi
+            fi
+            tmux a -t $SESSION
+        elif [[ $STOP == true ]]; then
+            relpath_tmux_file=$(cat $CONFIG | shyaml get-value "hosts.$JAVIS_SYSTEM_TYPE\\.$JAVIS_SYSTEM_COMPONENT.launch.stop" 2> /dev/null)
+            if [[ -z $relpath_tmux_file ]]; then
+                error "Unable to find stop config for $JAVIS_SYSTEM_TYPE.$JAVIS_SYSTEM_COMPONENT on $NAME"
+                continue
+            fi
+            tmux_file=$(dirname $CONFIG)/$relpath_tmux_file
+            if [ ! -e $tmux_file ]; then
+                error "Stop yaml [$tmux_file] for $JAVIS_SYSTEM_TYPE.$JAVIS_SYSTEM_COMPONENT.$LAUNCH on $NAME does not exist"
+                continue
+            fi
+            
+            detach_args=""
+            if [[ $DETACH == true ]]; then
+                detach_args="-d"
+            fi
+            main "Stopping launch on $NAME ($JAVIS_SYSTEM_TYPE.$JAVIS_SYSTEM_COMPONENT)"
+            command="tmuxp load $detach_args $tmux_file"
+
+
+            if [[ $DRY == true ]]; then
+                debug "-- Dry Run (No Command Will be Executed) --"
+                warning $command
+            else
+                warning "Executing..." 
+                warning "$command"
+                $command
+            fi
+        elif [[ $LAUNCH_SET == true ]] || [[ $REQUIRE_LAUNCH_SET == false ]]; then
+            if [[ $LAUNCH == "default" ]]; then
+                LAUNCH=$(cat $CONFIG | shyaml get-value "hosts.$JAVIS_SYSTEM_TYPE\\.$JAVIS_SYSTEM_COMPONENT.launch.default" 2> /dev/null)
+                if [ -z $LAUNCH ]; then
+                    error "Unable to identify default launch for $JAVIS_SYSTEM_TYPE.$JAVIS_SYSTEM_COMPONENT on $NAME"
+                    continue
+                fi
+            fi
+            main "Launching $LAUNCH on $NAME ($JAVIS_SYSTEM_TYPE.$JAVIS_SYSTEM_COMPONENT)"
+            relpath_tmux_file=$(cat $CONFIG | shyaml get-value "hosts.$JAVIS_SYSTEM_TYPE\\.$JAVIS_SYSTEM_COMPONENT.launch.launches.$LAUNCH" 2> /dev/null)
+            title "tmux file path: $relpath_tmux_file"
+            title "launch: $LAUNCH"
+            title "config: $CONFIG"
+            if [[ -z $relpath_tmux_file ]]; then
+                error "Unable to find configuration: $LAUNCH for $JAVIS_SYSTEM_TYPE.$JAVIS_SYSTEM_COMPONENT on $NAME"
+                continue
+            fi
+            tmux_file=$(dirname $CONFIG)/$relpath_tmux_file
+            if [ ! -e $tmux_file ]; then
+                error "Configuration yaml [$tmux_file] for $JAVIS_SYSTEM_TYPE.$JAVIS_SYSTEM_COMPONENT.$LAUNCH on $NAME does not exist"
+                continue
+            fi
+
+            detach_args=""
+            if [[ $DETACH == true ]]; then
+                detach_args="-d"
+            fi
+            command="tmuxp load $detach_args $tmux_file"
+
+            if [[ $DRY == true ]]; then
+                debug "-- Dry Run (No Command Will be Executed) --"
+                warning $command
+            else
+                warning "Executing..." 
+                warning "$command"
+                $command
+            fi
+        else
+            echo
+            error "Nothing to execute, you might beed to transfer to $NAME"
+            echo
+        fi
+    else
+        ssh -t $host "/bin/bash -c \"source ~/.javis/auto/javis_redirect.bash && javis-launch $ssh_args --name $host --requre-explicit-launch\""
+    fi
+done

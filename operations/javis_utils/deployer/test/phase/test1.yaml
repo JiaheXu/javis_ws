@@ -1,0 +1,18 @@
+- pwd
+- echo
+- sleep:
+  - sleep1
+- task1:
+  - sub1:
+    - ls
+    - sub2:
+      - cat
+    - sub3:
+      - G
+      - I
+  - something
+  - other:
+    - X
+    - Y
+    - Z
+- awake

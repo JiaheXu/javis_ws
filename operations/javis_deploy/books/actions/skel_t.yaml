@@ -1,0 +1,43 @@
+# //////////////////////////////////////////////////////////////////////////////
+# transfer deploy repo from local host to remote host
+# //////////////////////////////////////////////////////////////////////////////
+
+# force that transfer is always done on localhost
+- +local
+
+# export the local and remote paths
+- export LOCAL_PATH=$JAVIS_PATH/
+- export REMOTE_PATH=/home/javis/javis_ws/
+
+# deployer, rsync exclude options
+- export copy_opts="-avzh --delete --exclude=*.git/ --exclude=build/ --exclude=dds_install/ --exclude=devel/ --exclude=logs/ --include=.catkin_tools/profiles/**/config.yaml"
+
+- to:
+  # create the remote directory
+  - ssh $SSH_ALIAS "mkdir -p $REMOTE_PATH"
+
+  # copy command
+  - 'export copy_to="rsync $copy_opts $LOCAL_PATH $SSH_ALIAS:$REMOTE_PATH "'
+  - 'export copy_cmd=$copy_to'
+
+- from:
+  # copy command
+  - 'export copy_from="rsync $copy_opts $SSH_ALIAS:$REMOTE_PATH $LOCAL_PATH"'
+  - 'export copy_cmd=$copy_from'
+
+# evaluate the copy command
+- echo -e "\n${YELLOW}\t copy command -> \t $copy_cmd \n"
+
+# pre-transfer command execute
+- echo $pre_transfer_command
+- eval $pre_transfer_command
+
+# execute transfer
+- eval $copy_cmd
+
+# post-transfer command execute
+- echo $post_transfer_command
+- eval $post_transfer_command
+
+# output any post transfer commetns
+- echo -e "\e[33m$POST_TRANSFER_SETUPS_WARNINGS"

@@ -1,0 +1,7 @@
+- ls -all
+- top:
+  - uname -a
+  - sub:
+    - echo "sub section"
+
+- whoami

@@ -1,0 +1,20 @@
+- git:
+    local-name: bag_recorder
+    uri: git@bitbucket.org:cmusubt/bag_recorder.git
+    version: 6d789f6
+- git:
+    local-name: mcmn_status_monitor
+    uri: git@bitbucket.org:cmusubt/mcmn_status_monitor.git
+    version: dc2a5b192541c783a15d4127eebdc78628027ee5
+- git:
+    local-name: healthmonitoringsystem
+    uri: git@bitbucket.org:cmusubt/healthmonitoringsystem.git
+    version: b4ba963
+- git:
+    local-name: base_main_class_py
+    uri: git@bitbucket.org:cmusubt/base_main_class_py.git
+    version: aac11c79819a228696eb48bc6cc60fb652778e15
+- git:
+    local-name: rostime_sync
+    uri: git@bitbucket.org:cmusubt/rostime_sync.git
+    version: 3e5fef3

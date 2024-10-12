@@ -1,0 +1,124 @@
+# the tmux session name, has to be unique
+session_name: basestation_start
+
+# add commands to bash history
+suppress_history: true
+
+# start directory
+start_directory: $JAVIS_PATH/
+
+# commands to run before panes startup
+before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -st -- javis_common javis_drivers
+
+# basestation nodes
+windows:
+  - window_name: shell
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - xhost +
+        - docker-join.bash -n javis_common
+        - roscore
+      - shell_command:
+        - docker-join.bash -n javis_common
+        - echo "Shell Access here!"
+
+  # Basestation
+  - window_name: basestation
+    focus: true
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - xhost +
+        - docker-join.bash -n javis_common
+        - roslaunch --wait javis_visualization basestation_test.launch  2> >(grep -v TF_REPEATED_DATA buffer_core)
+        #    <!-- need to add video streaming things -->
+      #- shell_command:
+      #  - docker-join.bash -n javis_common
+      #  - roslaunch --wait javis_rqt_gui gui.launch
+
+  - window_name: drivers
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - xhost +
+        - docker-join.bash -n javis_drivers
+        - roslaunch --wait javis_drivers_core basestation_test.launch
+        #    <!-- need to add video streaming things -->
+
+  - window_name: comms
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - xhost +
+        - docker-join.bash -n javis_common
+        - sleep 5
+        - roslaunch --wait communication_manager communication_manager.launch
+      # - shell_command:
+      #   - docker-join.bash -n javis_common
+      #   - sleep 5
+      #   - roslaunch --wait communication_manager mpu5_query.launch
+
+  - window_name: gstreamer
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - xhost +
+        - gst-launch-1.0 -v udpsrc port=5000 ! "application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264, payload=(int)96" ! rtph264depay ! h264parse ! decodebin ! videoconvert ! fpsdisplaysink sync=false
+        
+  - window_name: gstreamer
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - xhost +
+        - gst-launch-1.0 -v udpsrc port=5001 ! "application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264, payload=(int)96" ! rtph264depay ! h264parse ! decodebin ! videoconvert ! fpsdisplaysink sync=false
+                
+  - window_name: autocalib
+    focus: true
+    layout: main-horizontal
+    panes:
+     - shell_command:
+        - xhost +
+        - docker-join.bash -n javis_common
+        - mon launch autocalib javis_basestation.launch
+  
+  
+  
+       #    #- shell_command:
+
+  # - window_name: staircase_manager
+  #   focus: true
+  #   layout: main-horizontal
+  #   panes:
+  #     - shell_command:
+  #       - docker-join.bash -n javis_common
+  #       - roslaunch --wait staircase_manager stair_manager.launch
+  #     - shell_command:
+
+  # develop branch
+  #- window_name: bt_visualization
+  #  focus: true
+  #  layout: main-horizontal
+  #  panes:
+  #    #- shell_command:
+  #      # - cd src/javis_common/behavior_tree/
+  #      # - rosrun rqt_gui rqt_gui --perspective-file BT_2bots.perspective
+  #    - shell_command:
+  #      - docker-join.bash -n javis_common
+  #      - roslaunch --wait javis_behavior_executive bst_behavior_tree_full.launch
+
+
+  # - window_name: logging
+  #   focus: false
+  #   layout: main-horizontal
+  #   panes:
+  #     - shell_command:
+  #       - docker-join.bash -n javis_common
+  #       - sleep 5
+  #       - javis-log --log-dir /logging --date-folder
+

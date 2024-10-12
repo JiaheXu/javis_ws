@@ -1,0 +1,31 @@
+topics:
+# - ilqr_controller/.*
+- controller/.*
+- low_level_control/.*
+# - track_stats/.*
+- mavros/.*
+- planner/directional_input
+- planner/goal_input
+- planner/path
+# - bob_points
+- aft_mapped_to_init_imu
+- graph/local
+- graph/global
+# - dsvplanner/new_tree_path
+# - dsvplanner/remaining_tree_path 
+# - dsvplanner/planner_boundry 
+# - dsvplanner/globalSelectedfrontier
+# - dsvplanner/threefrontier
+- graph_planner/command 
+- graph_planner/status
+- graph_planner/path
+# - frontier/global
+# - frontier/local
+# - dsvplanner/plan_time
+# - exploration/runtime
+# - exploration/totaltime
+# - dsvplanner/next_goal
+# - dsvplanner/octomap_occupied
+- /radio_snr
+- /peeled_off_bot
+- /bots_in_convoy

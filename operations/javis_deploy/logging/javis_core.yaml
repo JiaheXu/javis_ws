@@ -1,0 +1,6 @@
+topics:
+- executive/.*
+- system/.*
+- /tf
+- /tf_static
+- debug/.*

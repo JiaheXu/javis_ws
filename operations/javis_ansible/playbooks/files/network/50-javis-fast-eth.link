@@ -1,0 +1,6 @@
+[Match]
+Property=ID_VENDOR_ID=1c04 ID_MODEL_ID=0015
+#MACAddress=24:5e:be:65:52:45
+
+[Link]
+Name=eth-fast

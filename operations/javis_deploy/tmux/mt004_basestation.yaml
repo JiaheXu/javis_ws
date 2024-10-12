@@ -1,0 +1,66 @@
+# the tmux session name, has to be unique
+session_name: basestation_start
+
+# add commands to bash history
+suppress_history: true
+
+# start directory
+start_directory: $JAVIS_PATH/
+
+# commands to run before panes startup
+before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -st -- javis_common javis_drivers
+
+# basestation nodes
+windows:
+  - window_name: joystick
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=41
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash     
+        - ros2 launch basestation_joy mt004.xml
+        
+  - window_name: dtc_behavior_tree
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=41
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash
+        - ros2 launch dtc_behavior_tree visualize_namespace.launch.xml robot_prefix:=mt004
+
+  # - window_name: gstreamer
+  #   focus: false
+  #   layout: main-horizontal
+  #   panes:
+  #     - shell_command:
+  #       - gst-launch-1.0 -v udpsrc multicast-group=239.255.0.31 port=5001 multicast-iface=$INTERFACE_NAME ! "application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264, payload=(int)96" ! rtph264depay ! h264parse ! decodebin ! videoconvert ! fpsdisplaysink sync=false
+
+  - window_name: ping_orin
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - ping 10.3.1.44
+        
+  - window_name: image_stream
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=41
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash
+        - source /opt/ros/humble/setup.bash
+        - ros2 launch compressed_image_converter launch.xml sensor_index:=4
+      
+      - shell_command:
+        - docker-join.bash -n javis_ros2
+        - export ROS_DOMAIN_ID=41
+        - source ~/javis_ws/src/airlab_ros2/install/setup.bash
+        - source /opt/ros/humble/setup.bash
+        - ros2 launch compressed_image_converter visualize_images.launch.xml sensor_index:=4

@@ -1,0 +1,227 @@
+version: '2.3'
+services:
+  arm-tegra-gpu:
+    build:
+      context: ${JAVIS_DOCKER_PATH}/
+      args:
+        #- BASE_DOCKER_IMAGE=nvcr.io/nvidia/l4t-base:r35.1.0
+        - BASE_DOCKER_IMAGE=nvcr.io/nvidia/l4t-ml:r35.1.0-py3
+        # - BASE_DOCKER_IMAGE=nvcr.io/nvidia/l4t-ml:r35.2.1-py3
+    volumes:
+      # # mount the opencv4 headers from host
+      # - /usr/include/opencv4/:/usr/include/opencv4/
+      # - /usr/lib/aarch64-linux-gnu/cmake/opencv4:/usr/lib/aarch64-linux-gnu/cmake/opencv4
+      # # mount the opencv4 libraries from host
+      # - /usr/lib/aarch64-linux-gnu/libopencv_video.so:/usr/lib/aarch64-linux-gnu/libopencv_video.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_highgui.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_highgui.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_features2d.so:/usr/lib/aarch64-linux-gnu/libopencv_features2d.so
+      # #- /usr/lib/aarch64-linux-gnu/libopencv_gapi.so:/usr/lib/aarch64-linux-gnu/libopencv_gapi.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_photo.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_photo.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_core.so:/usr/lib/aarch64-linux-gnu/libopencv_core.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_videoio.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_videoio.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_ml.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_ml.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/pkgconfig/opencv4.pc:/usr/lib/aarch64-linux-gnu/pkgconfig/opencv4.pc
+      # - /usr/lib/aarch64-linux-gnu/libopencv_stitching.so:/usr/lib/aarch64-linux-gnu/libopencv_stitching.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_stitching.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_stitching.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so:/usr/lib/aarch64-linux-gnu/libopencv_calib3d.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_video.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_video.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_gapi.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_gapi.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_objdetect.so:/usr/lib/aarch64-linux-gnu/libopencv_objdetect.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_highgui.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_highgui.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_dnn.so:/usr/lib/aarch64-linux-gnu/libopencv_dnn.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_objdetect.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_objdetect.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_ml.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_ml.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_dnn.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_dnn.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_dnn.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_dnn.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_gapi.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_gapi.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_ml.so:/usr/lib/aarch64-linux-gnu/libopencv_ml.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_videoio.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_videoio.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_highgui.so:/usr/lib/aarch64-linux-gnu/libopencv_highgui.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_objdetect.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_objdetect.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_video.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_video.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_photo.so.4.1.1:/usr/lib/aarch64-linux-gnu/libopencv_photo.so.4.1.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_photo.so:/usr/lib/aarch64-linux-gnu/libopencv_photo.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_videoio.so:/usr/lib/aarch64-linux-gnu/libopencv_videoio.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_flann.so:/usr/lib/aarch64-linux-gnu/libopencv_flann.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so:/usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so
+      # - /usr/lib/aarch64-linux-gnu/libopencv_stitching.so.4.1:/usr/lib/aarch64-linux-gnu/libopencv_stitching.so.4.1
+      # - /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so:/usr/lib/aarch64-linux-gnu/libopencv_imgproc.so
+      # #- /usr/lib/aarch64-linux-gnu/libv4l2.so:/usr/lib/aarch64-linux-gnu/libv4l2.so
+      # - /usr/lib/aarch64-linux-gnu/libcurand.so.10:/usr/lib/aarch64-linux-gnu/libcurand.so.10
+
+      # - /usr/local/cuda-11.4/targets/aarch64-linux/lib/libcufft.so.10:/usr/local/cuda-11.4/targets/aarch64-linux/lib/libcufft.so.10
+      ## Misc software mount-in
+      - /opt/nvidia:/opt/nvidia
+      # - /usr/local/cuda:/usr/local/cuda
+      # - /usr/local/cuda/lib64:/usr/local/cuda/lib64
+      - :/usr/lib/aarch64-linux-gnu/tegra
+      # - /usr/bin/opencv_version:/usr/bin/opencv_version
+      - /usr/src/jetson_multimedia_api:/usr/src/jetson_multimedia_api
+      - /usr/src/jetson_multimedia_api/argus:/usr/src/jetson_multimedia_api/argus
+      - /etc/nv_tegra_release:/etc/nv_tegra_release
+      - /boot/dtb/kernel_tegra234-p3701-0000-p3737-0000.dtb:/boot/dtb/kernel_tegra234-p3701-0000-p3737-0000.dtb
+      - /external/dds_install/:/home/developer/dds_install/
+      
+    devices:
+      - /dev/nvhost-ctrl
+      - /dev/nvhost-ctrl-gpu
+      - /dev/nvhost-prof-gpu
+      - /dev/nvmap
+      - /dev/nvhost-gpu
+      - /dev/nvhost-as-gpu
+    # runtime: nvidia
+
+  # ////////////////////////////////////////////////////////////////////////////
+  # base non-gpu build
+  # ////////////////////////////////////////////////////////////////////////////
+  x86-non-gpu:
+    build:
+      context: ${JAVIS_DOCKER_PATH}/
+      args:
+        - BASE_DOCKER_IMAGE=nvidia/opengl:1.2-glvnd-devel-ubuntu20.04
+
+  # ////////////////////////////////////////////////////////////////////////////
+  # base ros, x86, gpu workspace setup
+  # ////////////////////////////////////////////////////////////////////////////
+  x86-nvidia-gpu:
+    build:
+      context: ${JAVIS_DOCKER_PATH}/
+      args:
+        - BASE_DOCKER_IMAGE=nvidia/opengl:1.2-glvnd-devel-ubuntu20.04
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      
+    volumes:
+      # mount the opencv4 headers from host
+      - ~/dds_install/:/home/developer/dds_install/
+    runtime: nvidia
+
+  # ////////////////////////////////////////////////////////////////////////////
+  # base image service, that extends any one of the system group services
+  # ////////////////////////////////////////////////////////////////////////////
+  base:
+    # extend gpu or non-gpu
+    build:
+      args:
+        - ARCH_T=$JAVIS_ARCH_T
+        - JAVIS_ROS_DISTRO=$JAVIS_ROS_DISTRO
+        - DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION
+        - user_id=$JAVIS_USERID
+        - group_id=$JAVIS_GROUPID
+    extends:
+      service: ${JAVIS_HOST_TYPE}
+    privileged: true
+    security_opt:
+      - seccomp:unconfined
+    ipc: host
+    volumes:
+      # javis workspace
+      - ${JAVIS_PATH}:/home/developer/javis_ws/
+      # gui configurations
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /etc/localtime:/etc/localtime:ro
+      - /dev/input:/dev/input
+      - /dev/:/dev/
+      - /etc/hosts:/etc/hosts
+      - ~/.javis/auto/deploy.conf:/home/developer/.javis/auto/deploy.conf
+      - ${JAVIS_LOGGING_DIR}:/logging
+      - /var/log/syslog:/syslog
+      #- $XAUTHORITY:/home/developer/.Xauthority:rw
+    environment:
+      # Set environment params for GUI container passthrough
+      - DISPLAY
+      - QT_X11_NO_MITSHM=1
+      # - XAUTHORITY=/tmp/.docker.xauth
+      # - QT_QPA_PLATFORM='offscreen'
+      - JAVIS_ROS_DISTRO=${JAVIS_ROS_DISTRO}
+      # deployer export for exec call
+      - DEPLOYER_TOP_PATH=/home/developer/javis_ws/operations//javis_deploy/deployer/
+      - DEPLOYER_BIN=/home/developer/javis_ws/operations//javis_deploy/deployer/bin/
+      - DEPLOYER_BOOKS_PATH=/home/developer/javis_ws/operations//javis_deploy/books/
+      - JAVIS_PATH=/home/developer/javis_ws/
+      - JAVIS_SRC_PATH=/home/developer/javis_ws/src/
+      # Set the hostnames of different systems
+      - ROS_MASTER_IP=$JAVIS_HOSTNAME
+      - ROS_HOSTNAME=$JAVIS_HOSTNAME
+      - JAVIS_USERID=$JAVIS_USERID
+      - JAVIS_GROUPID=$JAVIS_GROUPID
+      - JAVIS_SYSTEM_ID=$JAVIS_SYSTEM_ID
+      - JAVIS_SYSTEM_TYPE=$JAVIS_SYSTEM_TYPE
+      - JAVIS_SYSTEM_COMPONENT=$JAVIS_SYSTEM_COMPONENT
+      - JAVIS_SETUP_SUPPRESS_CHECKS=true
+    entrypoint:
+      - /docker-entrypoint/ws-shell.bash
+    tty: true
+    # use host network
+    network_mode: "host"
+
+
+  ros2_base:
+    # extend gpu or non-gpu
+    build:
+      args:
+        - ARCH_T=$JAVIS_ARCH_T
+        - JAVIS_ROS_DISTRO=$JAVIS_ROS_DISTRO
+        - DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION
+        - user_id=$JAVIS_USERID
+        - group_id=$JAVIS_GROUPID
+    extends:
+      service: ${JAVIS_HOST_TYPE}
+    privileged: true
+    security_opt:
+      - seccomp:unconfined
+    ipc: host
+    volumes:
+
+      # javis workspace
+      - ${JAVIS_PATH}:/home/developer/javis_ws/
+      # gui configurations
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /etc/localtime:/etc/localtime:ro
+      - /dev/input:/dev/input
+      - /dev/:/dev/
+      - /etc/hosts:/etc/hosts
+      - ~/.javis/auto/deploy.conf:/home/developer/.javis/auto/deploy.conf
+      - ${JAVIS_LOGGING_DIR}:/logging
+      - /var/log/syslog:/syslog
+      - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra
+      #- $XAUTHORITY:/home/developer/.Xauthority:rw
+
+    environment:
+      # Set environment params for GUI container passthrough
+      - DISPLAY
+      - QT_X11_NO_MITSHM=1
+      # - XAUTHORITY=/tmp/.docker.xauth
+      # - QT_QPA_PLATFORM='offscreen'
+      # - JAVIS_ROS_DISTRO=${JAVIS_ROS_DISTRO}
+      # deployer export for exec call
+      - DEPLOYER_TOP_PATH=/home/developer/javis_ws/operations//javis_deploy/deployer/
+      - DEPLOYER_BIN=/home/developer/javis_ws/operations//javis_deploy/deployer/bin/
+      - DEPLOYER_BOOKS_PATH=/home/developer/javis_ws/operations//javis_deploy/books/
+      - JAVIS_PATH=/home/developer/javis_ws/
+      - JAVIS_SRC_PATH=/home/developer/javis_ws/src/
+      # Set the hostnames of different systems
+      - ROS_MASTER_IP=$JAVIS_HOSTNAME
+      - ROS_HOSTNAME=$JAVIS_HOSTNAME
+      - JAVIS_USERID=$JAVIS_USERID
+      - JAVIS_GROUPID=$JAVIS_GROUPID
+      - JAVIS_SYSTEM_ID=$JAVIS_SYSTEM_ID
+      - JAVIS_SYSTEM_TYPE=$JAVIS_SYSTEM_TYPE
+      - JAVIS_SYSTEM_COMPONENT=$JAVIS_SYSTEM_COMPONENT
+      - JAVIS_SETUP_SUPPRESS_CHECKS=true
+    tty: true
+    # use host network
+    network_mode: "host"

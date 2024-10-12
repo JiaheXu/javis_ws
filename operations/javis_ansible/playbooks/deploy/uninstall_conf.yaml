@@ -1,0 +1,35 @@
+# Sets up ~/.javis
+- name: Setup Local Configuration
+  gather_facts: no
+  hosts: all
+
+  tasks:
+    - name: "Remove {{ javis.deploy_conf | dirname }}"
+      file:
+        path: "{{ javis.deploy_conf | dirname }}"
+        state: absent
+  
+    - name: "Remove {{ javis.global_conf | dirname }}"
+      become: true
+      file:
+        path: "{{ javis.global_conf | dirname }}"
+        state: absent
+
+    - name: Remove {{ javis.redirect_bash }} from bashrc
+      lineinfile:
+        dest: ~/.bashrc
+        state: absent
+        regexp: 'JAVIS SOURCE REDIRECT'
+      when: javis_path is defined
+
+    - name: Remove old javisrc
+      lineinfile:
+        dest: ~/.bashrc
+        state: absent
+        regexp: 'javisrc'
+      when: javis_path is defined
+
+    - name: Remove ~/.ssh/javis.d
+      file:
+        path: ~/.ssh/javis.d
+        state: absent

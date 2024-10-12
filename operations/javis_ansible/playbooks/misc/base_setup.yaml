@@ -1,0 +1,221 @@
+---
+# ////////////////////////////////////////////////////////////////////////
+# install & setup robot host system packages
+# ////////////////////////////////////////////////////////////////////////
+- name: robothost setup
+  hosts: all
+  gather_facts: False
+  vars_files:
+  - ../../config/packages.yaml
+  - ../../config/install_options.yaml
+
+  tasks:
+    # ////////////////////////////////////////////////////////////////////////
+    # Install Base Packages
+    # ////////////////////////////////////////////////////////////////////////
+    - name: update apt packages
+      become: true
+      apt:
+        force: yes          # force yes
+        force_apt_get: yes
+        install_recommends: yes
+        update_cache: yes   # force apt-get update
+
+    - name: Curl Get-pip script
+      get_url:
+        url: https://bootstrap.pypa.io/pip/2.7/get-pip.py
+        dest: /tmp/get-pip.py
+
+    # - name: Run get-pip script
+    #   shell: python2 /tmp/get-pip.py
+    #   become: True
+
+    - name: Remove existing pyhon3-pip
+      become: True
+      apt:
+        name: python3-pip
+        state: absent
+      when: install_common_apt
+
+    - name: install ubuntu prerequisite packages
+      become: true
+      apt:
+        name: "{{ apt.common }}"
+        force: yes          # force yes
+        force_apt_get: yes
+        update_cache: yes   # force apt-get update
+      when: install_common_apt
+
+    # - name: Add Apt Repo Universe
+    #   shell: add-apt-repository universe
+    #   become: True
+
+    # note: can output segmentation fault on localhost (really????)
+    # - name: install python prerequisite packages
+    #   pip:
+    #     executable: pip2
+    #     name: "{{ pip2.common }}"
+    #   become: true
+    #   when: install_common_pip
+
+    - name: install python prerequisite packages
+      pip:
+        executable: pip3
+        name: "{{ pip3.common }}"
+      become: true
+      when: install_common_pip
+
+    - name: install ubuntu 18.04 prerequisite packages
+      become: true
+      apt:
+        name: "{{ apt.ubuntu_1804 }}"
+        state: present
+        force: yes          # force yes
+        force_apt_get: yes
+        install_recommends: yes
+        update_cache: yes   # force apt-get update
+      when: ubuntu_release == "bionic" and install_common_apt
+
+    # - name: install gstreamer packages
+    #   become: true
+    #   apt:
+    #     name: "{{ apt.gstreamer }}"
+    #     force: yes          # force yes
+    #     force_apt_get: yes
+    #     install_recommends: yes
+    #     update_cache: yes   # force apt-get update
+    #   when: install_gstreamer_apt
+
+    - name: install orin prerequisite packages
+      become: true
+      apt:
+        name: "{{ apt.arm }}"
+        force: yes          # force yes
+        force_apt_get: yes
+        install_recommends: yes
+        update_cache: yes   # force apt-get update
+      when: install_orin_apt and "x86" not in arch_type
+
+    # ////////////////////////////////////////////////////////////////////////
+    # Install Remote Desktop
+    # ////////////////////////////////////////////////////////////////////////
+
+    - name: install RDP prerequisite packages
+      become: true
+      ignore_errors: yes
+      apt:
+        name: "{{ apt.rdp_packages }}"
+        force: yes  # force yes
+        force_apt_get: yes
+        install_recommends: yes
+        update_cache: yes   # force apt-get update
+      when: install_rdp
+
+    - name: enable service xrdp
+      become: true
+      systemd:
+        name: xrdp
+        enabled: yes    # start service on boot
+        masked: no
+      when: install_rdp
+
+    - name: add session to xsession
+      shell: echo xfce4-session >~/.xsession
+      when: install_rdp
+
+    - name: restart service xrdp
+      become: true
+      systemd:
+        name: xrdp
+        state: restarted  # make sure service is running
+        enabled: yes    # start service on boot
+        masked: no
+      when: install_rdp
+
+    # ////////////////////////////////////////////////////////////////////////
+    # Setup SSH Keys
+    # ////////////////////////////////////////////////////////////////////////
+
+    - name: Creates SSH Directory
+      file:
+        path: ~/.ssh/
+        state: directory
+      when: setup_bitbucket_key or setup_javis_key
+
+    - name: Check for existing bitbucket key
+      stat:
+        path: $HOME/.ssh/bitbucket
+      register: bitbucket_check
+      when: setup_bitbucket_key
+
+    - name: Add Bitbucket to Known Hosts
+      shell: ssh-keygen -f $HOME/.ssh/bitbucket -N ""
+      when: setup_bitbucket_key and not bitbucket_check.stat.exists
+
+    - name: Create SSH Config File
+      file:
+        path: ~/.ssh/config
+        state: touch
+      when: setup_bitbucket_key or setup_javis_key
+
+    - name: Add Bitubucket to the SSH config
+      lineinfile:
+        path: ~/.ssh/config
+        regexp: 'IdentityFile ~/.ssh/bitbucket'
+        line: IdentityFile ~/.ssh/bitbucket
+      when: setup_bitbucket_key
+
+    - name: Create JAVIS SSH Directory
+      file:
+        path: ~/.ssh/javis.d
+        state: directory
+      when: setup_javis_key
+    
+    - name: Check for existing JAVIS Key
+      stat:
+        path: $HOME/.ssh/javis.d/javis_key
+      register: javis_key_check
+      when: setup_javis_key
+
+    - name: Generate JAVIS Key
+      shell: ssh-keygen -f $HOME/.ssh/mpug.d/javis_key -N ""
+      when: setup_javis_key and not javis_key_check.stat.exists
+
+    - name: Install Submodule Tools
+      git:
+        repo: https://github.com/kollerma/git-submodule-tools.git
+        dest: /usr/local/src/git-submodule-tools
+      become: true
+      when: install_git_submodule_tools
+      
+    - name: Check for zshrc
+      stat:
+        path: ~/.zshrc
+      register: zshrc_stat
+      when: install_git_submodule_tools
+
+    - name: "Remove submodule tools from bashrc"
+      lineinfile:
+        dest: ~/.bashrc
+        state: absent
+        regexp: 'JAVIS SUBMODULE TOOLS PATH ADD'
+      when: install_git_submodule_tools
+
+    - name: "Remove submodule from zshrc"
+      lineinfile:
+        dest: ~/.zshrc
+        state: absent
+        regexp: 'JAVIS SUBMODULE TOOLS PATH ADD'
+      when: zshrc_stat.stat.exists and install_git_submodule_tools
+
+    - name: "Add {{ javis.redirect_bash }} to bashrc"
+      lineinfile:
+        dest: ~/.bashrc
+        line: "export PATH=\"$PATH:/usr/local/src/git-submodule-tools/bin\" # JAVIS SUBMODULE TOOLS PATH ADD"
+      when: install_git_submodule_tools
+    
+    - name: "Add {{ javis.redirect_bash }} to zshrc"
+      lineinfile:
+        dest: ~/.zshrc
+        line: "export PATH=\"$PATH:/usr/local/src/git-submodule-tools/bin\" # JAVIS SUBMODULE TOOLS PATH ADD"
+      when: zshrc_stat.stat.exists and install_git_submodule_tools

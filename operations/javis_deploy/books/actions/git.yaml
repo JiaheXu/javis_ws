@@ -1,0 +1,38 @@
+- '[ ! -z "$GIT_WORKSPACE_META" ] || ( echo "ERROR: GIT_WORKSPACE_META not set" && exit 1 )'
+- '[ ! -z "$GIT_WORKSPACE_ROOT" ] || ( echo "ERROR: GIT_WORKSPACE_ROOT not set" && exit 1 )'
+
+- echo "Working from Root [${GIT_WORKSPACE_ROOT}] on meta [${GIT_WORKSPACE_META}]"
+
+- cd ${GIT_WORKSPACE_ROOT}
+- pull:
+  - cd $GIT_WORKSPACE_META
+  - git submodule update --recursive --init .
+  - git clean -d -f -f
+
+- reset:
+  # remove
+  - git submodule deinit -f $GIT_WORKSPACE_META
+  # clone
+  - git submodule update --recursive --init $GIT_WORKSPACE_META
+  - cd $GIT_WORKSPACE_META
+  - git clean -d -f -f
+
+- rm:
+  - git submodule deinit -f $GIT_WORKSPACE_META
+
+- clean:
+  - cd $GIT_WORKSPACE_META
+  # remove untracked files
+  - git clean -xfd
+  # remove unstaged changes
+  - git checkout -- .
+  # remove untracked files in all submodules
+  # - if [ ! -z "$(ls .)" ]; then git submodule foreach --recursive git clean -xfd; fi
+  # reset top level
+  # - git reset --hard
+  # reset the submodules, recursive
+  # - git submodule foreach --recursive git reset --hard
+  # - git submodule update --init --recursive
+  # show the git status
+  - pwd
+  - if [ ! -z "$(ls .)" ]; then git status; fi

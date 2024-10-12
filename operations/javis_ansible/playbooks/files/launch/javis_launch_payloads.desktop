@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=true
+Exec=bash -c '(source ~/.javis/auto/javis_redirect.bash && javis launch --payloads) || (echo "Launch Failed :(" && sleep 10)'
+Name=Payloads Launch
+Comment=Launch all connected Payloads
+Name[en]=Payloads Launch
+Comment[en]=Launch all connected Payloads
+Icon=javis-icon.png

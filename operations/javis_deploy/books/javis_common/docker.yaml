@@ -1,0 +1,30 @@
+# Registry
+- '[ ! -z "$AZURE_REGISTRY" ] || ( echo "ERROR: AZURE_REGISTRY not set" && exit 1 )'
+- '[ ! -z "$DOCKER_COMPOSE_EXTEND" ] || ( echo "ERROR: DOCKER_COMPOSE_EXTEND not set" && exit 1 )'
+
+- SERVICE=javis_common
+- CONTAINER=javis_common
+- DOCKER_IMAGE=javis/${ARCH_T}.ros.${JAVIS_ROS_DISTRO}:${DOCKER_IMAGE_VERSION}
+- +extend: actions/docker/registry
+- +extend: actions/docker/make
+
+- shell:
+  - +extend: actions/docker/start
+  - +extend: actions/docker/stop
+  - +extend: actions/docker/rm
+
+# - roscore:
+#   - SERVICE=roscore
+#   - CONTAINER=roscore
+#   - +extend: actions/docker/start
+#   - +extend: actions/docker/stop
+#   - +extend: actions/docker/rm
+
+# - rviz:
+#   - SERVICE=rviz
+#   - CONTAINER=rviz
+#   - +extend: actions/docker/start
+#   - +extend: actions/docker/stop
+#   - +extend: actions/docker/rm
+
+

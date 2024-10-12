@@ -1,0 +1,21 @@
+# the tmux session name, has to be unique
+session_name: basestation_stop
+
+# add commands to bash history
+suppress_history: true
+
+# start directory
+start_directory: $JAVIS_PATH/
+
+# basestation nodes
+windows:
+  - window_name: stop basestation
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -st -- javis_ros2
+        - tmux kill-session -t basestation_start
+        - sleep 2
+        - tmux kill-session -t basestation_stop
+

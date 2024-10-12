@@ -1,0 +1,100 @@
+# Sets up ~/.javis
+- name: Setup Local Configuration
+  gather_facts: no
+  hosts: all
+
+  tasks:
+    - name: "Create {{ javis.deploy_conf | dirname }}"
+      file:
+        path: "{{ javis.deploy_conf | dirname }}"
+        state: directory
+        mode: '0755'
+
+    - name: Set Logging Dir (Non)
+      set_fact:
+        logging_dir: ~/logging/local
+      when: not jetson_orin
+
+    - name: Set Logging Dir (Jetson)
+      set_fact:
+        logging_dir: /external/logging
+      when: jetson_orin
+
+    - name: Create logging dir
+      file:
+        path: "{{ logging_dir }}"
+        state: directory
+  
+    - name: "Create {{ javis.deploy_conf }}"
+      template:
+        src: ../files/auto/deploy.conf
+        dest: "{{ javis.deploy_conf }}"
+
+    - name: "Create {{ javis.install_conf }}"
+      template:
+        src: ../files/auto/install.conf
+        dest: "{{ javis.install_conf }}"
+
+    - name: "Create {{ javis.redirect_bash }}"
+      template:
+        src: ../files/auto/redirect.bash
+        dest: "{{ javis.redirect_bash }}"
+      when: javis_path is defined
+
+    - name: Check for zshrc
+      stat:
+        path: ~/.zshrc
+      register: zshrc_stat
+
+    - name: "Remove {{ javis.redirect_bash }} from bashrc"
+      lineinfile:
+        dest: ~/.bashrc
+        state: absent
+        regexp: 'JAVIS SOURCE REDIRECT'
+      when: javis_path is defined
+
+    - name: Remove old javisrc
+      lineinfile:
+        dest: ~/.bashrc
+        state: absent
+        regexp: 'javisrc'
+      when: javis_path is defined
+    
+    - name: "Remove {{ javis.redirect_bash }} from zshrc"
+      lineinfile:
+        dest: ~/.zshrc
+        state: absent
+        regexp: 'JAVIS SOURCE REDIRECT'
+      when: zshrc_stat.stat.exists and javis_path is defined
+
+    - name: "Add {{ javis.redirect_bash }} to bashrc"
+      lineinfile:
+        dest: ~/.bashrc
+        line: "([ ! -e {{ javis.redirect_bash }} ] && echo 'JAVIS Redirect not found, you might need to reinstall.') || source {{ javis.redirect_bash }} # JAVIS SOURCE REDIRECT"
+      when: javis_path is defined
+    
+    - name: "Add {{ javis.redirect_bash }} to zshrc"
+      lineinfile:
+        dest: ~/.zshrc
+        line: "([ ! -e {{ javis.redirect_bash }} ] && echo 'JAVIS Redirect not found, you might need to reinstall.') || source {{ javis.redirect_bash }} # JAVIS SOURCE REDIRECT"
+      when: zshrc_stat.stat.exists and javis_path is defined
+
+    - name: Check for .tmux.conf
+      stat:
+        path: ~/.tmux.conf
+      register: tmux_conf_stat
+
+    - name: Check about touching .tmux.conf
+      lineinfile:
+        name: ~/.tmux.conf
+        line: "# JAVIS INSTALL NO TOUCHIE"
+        state: present
+      check_mode: yes
+      register: conf_has_line
+      when: tmux_conf_stat.stat.exists
+
+    - name: Install .tmux.conf
+      template:
+        src: ../files/tmux.conf
+        dest: ~/.tmux.conf
+      when: not tmux_conf_stat.stat.exists or conf_has_line.changed

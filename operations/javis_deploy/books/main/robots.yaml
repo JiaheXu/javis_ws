@@ -1,0 +1,55 @@
+- source $JAVIS_OPERATIONS/.version.env
+
+# directly on any payload host
+- local:
+  - export DCTX=default
+  - +extend: javis
+
+- bst001:
+  - export SSH_ALIAS=javis-bst-001
+  - export JAVIS_SCENARIO_NAME=javis-bst-001
+  - export DCTX=javis-bst-001
+  - +ssh:{ javis-bst-001}
+  - +extend: javis
+
+- pt001:
+  - export SSH_ALIAS=javis-pt-001
+  - export JAVIS_SCENARIO_NAME=javis-pt-001
+  - export DCTX=javis-pt-001
+  - +ssh:{ javis-pt-001}
+  - +extend: javis
+
+- pt002:
+  - export SSH_ALIAS=javis-pt-002
+  - export JAVIS_SCENARIO_NAME=javis-pt-002
+  - export DCTX=javis-pt-002
+  - +ssh:{ javis-pt-002 }
+  - +extend: javis
+
+- pt003:
+  - export SSH_ALIAS=javis-pt-003
+  - export JAVIS_SCENARIO_NAME=javis-pt-003
+  - export DCTX=javis-pt-003
+  - +ssh:{ javis-pt-003 }
+  - +extend: javis
+
+- pt004:
+  - export SSH_ALIAS=javis-pt-004
+  - export JAVIS_SCENARIO_NAME=javis-pt-004
+  - export DCTX=javis-pt-004
+  - +ssh:{ javis-pt-004 }
+  - +extend: javis
+
+- pt005:
+  - export SSH_ALIAS=javis-pt-005
+  - export JAVIS_SCENARIO_NAME=javis-pt-005
+  - export DCTX=javis-pt-005
+  - +ssh:{ javis-pt-005 }
+  - +extend: javis
+
+- bio001:
+  - export SSH_ALIAS=javis-bio-001
+  - export JAVIS_SCENARIO_NAME=javis-bio-001
+  - export DCTX=javis-bio-001
+  - +ssh:{ javis-bio-001 }
+  - +extend: javis

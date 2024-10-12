@@ -1,0 +1,4 @@
+- git:
+    local-name: rosmon
+    uri: git@bitbucket.org:cmusubt/rosmon.git
+    version: 3f41b1324dce62f0b2b29f6c52f1d0f3b647d5ec

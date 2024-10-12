@@ -1,0 +1,4 @@
+topics:
+# - ilqr_controller/.*
+- /stair_detector/stairs
+- stair_detector/detected_raw

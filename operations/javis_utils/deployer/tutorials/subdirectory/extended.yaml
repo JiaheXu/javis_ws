@@ -1,0 +1,11 @@
+- pwd
+- ls -all
+
+# this is an example section
+- foo:
+  - echo "Hello! I'm in extended 1, foo"
+
+- bar:
+  - echo "Hello! I'm in extended 1, bar"
+
+- hostname
