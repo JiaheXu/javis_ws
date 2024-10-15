@@ -23,7 +23,7 @@ _SET_ROS2="\$SET_ROS2"
 
 _ROS_WS="\$ROS_SOURCED_WORKSPACE"
 _ROS_DISTRO="\$JAVIS_ROS_DISTRO"
-source /docker-entrypoint/roscore-env-setup.bash
+source /docker-entrypoint/ros-env-setup.bash
 
 # Should be done after the roscore setup - roscore setup removes javis setup
 cd ~/javis_ws/
