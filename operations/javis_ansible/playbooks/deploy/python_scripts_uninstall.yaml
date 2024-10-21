@@ -23,10 +23,10 @@
       shell: hit disable
       when: hit_running
 
-    # - name: Uninstall Host Info Tools (might fail but that's cool)
-    #   become: True
-    #   shell: python3 -m pip uninstall -y host-info-tools
-    #   ignore_errors: True
+    - name: Uninstall Host Info Tools (might fail but that's cool)
+      become: True
+      shell: python3 -m pip uninstall -y host-info-tools
+      ignore_errors: True
 
     - name: Remove Host Info Tools Config
       become: True

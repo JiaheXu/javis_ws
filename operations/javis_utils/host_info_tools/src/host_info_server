@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+import fnmatch
+import socket
+import ifcfg
+import yaml
+import time
+import json
+import sys
+import os
+
+import _thread
+
+from host_info_tools import message_interface as hit_mi
+from host_info_tools import hosts_file as hit_hf
+from host_info_tools import host_discovery as hit_hd
+from host_info_tools import host_database as hit_hdb
+from host_info_tools import argparse as hit_a
+
+
+def load_config(file):
+    try:
+        with open(file, 'r') as stream:
+            return yaml.safe_load(stream)
+    except Exception as err:
+        raise Exception("Unable to load config [%s]: %s"%(file,str(err)))
+
+if __name__ == "__main__":
+    config_file = "/etc/host_info_tools/host_info_server.yaml"
+
+    ap = hit_a.Arguments(["c", "config"])
+    ap.parse_arguments(sys.argv[1:])
+
+    config_src = ap.get_flag_value(["c", "config"])
+    if config_src is not None:
+        config_file = config_src
+
+    cfg = load_config(config_file)
+    def check_cfg(name, default, cfg = cfg):
+        if cfg is None or name not in cfg:
+            return default
+        return cfg[name]
+
+    mcast_group = check_cfg("mcast_group", "224.1.1.1")
+    mcast_port = check_cfg("mcast_port", 5000)
+    server_hostname = check_cfg("server_hostname", socket.gethostname())
+    server_port = check_cfg("server_port", 6753)
+    server_host = check_cfg("server_host", "0.0.0.0")
+    startup_delay = check_cfg("startup_delay", 5.)
+    const_param_files = check_cfg("const_param_files", [])
+    cache_file = check_cfg("cache_file", "")
+    cache_interval = check_cfg("cache_interval", 10.)
+    cache_timeout = check_cfg("cache_timeout", 359200.)
+
+    if len(server_hostname) <= 0:
+        raise Exception("Server Hostname must be a string of length > 0")
+    database = hit_hdb.HostDatabase(server_hostname, const_param_files, cache_file, cache_timeout)
+    print("INFO: loaded server with %s"%str(database.getLocalParams()), file=sys.stderr)
+
+    # Generate host files
+    host_files = []
+    if "host_files" in cfg:
+        for host_file in cfg["host_files"]:
+            if "file_path" not in host_file:
+                print("ERROR: invalid host_files config, each entry must contain file_path", file=sys.stderr)
+                continue
+            file_path = host_file["file_path"]
+            update_period = check_cfg("update_period", 1., host_file)
+            
+            f = hit_hf.HostFile(file_path, database)
+            f.spawn_update_thread(update_period)
+            host_files.append(f)
+
+    info_server = hit_mi.Server(server_host, server_port, database)
+    info_server.spawn_listen_thread()
+
+    if startup_delay > 0.:
+        time.sleep(startup_delay)
+
+    # Generate discovery
+    discoverers = []
+    request_on_start = check_cfg("request_on_start", False)
+    broadcast_on_start = check_cfg("broadcast_on_start", True)
+    broadcast_on_interval = check_cfg("broadcast_on_interval", 1.)
+
+    discoverer = hit_hd.HostDiscovery(server_hostname, mcast_group, mcast_port, server_port, database)
+    discoverer.spawn_scanning_thread()
+
+    if request_on_start:
+        discoverer.request_broadcast()
+    if broadcast_on_start:
+        discoverer.broadcast()
+    if broadcast_on_interval > 0.:
+        discoverer.spawn_broadcast_thread(broadcast_on_interval)
+
+    if len(cache_file) > 0:
+        database.spawn_cache_thread(cache_interval)
+
+    # All threads are spawned, we just let them do their thing :)
+    while True:
+        time.sleep(10.)

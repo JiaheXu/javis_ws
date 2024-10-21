@@ -41,7 +41,7 @@
 
     - name: Enable host info server
       become: true
-      shell: sudo hit enable
+      shell: hit enable
 
     - name: Touch ~/.ssh/config
       file:

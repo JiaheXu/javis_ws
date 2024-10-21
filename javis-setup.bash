@@ -13,7 +13,7 @@ export JAVIS_MAJOR_VERSION=2
 # Mark upgrades - but no new install needed
 export JAVIS_MINOR_VERSION=1
 # If there is a new maintainer please update :)
-export JAVIS_MAINTAINER="Joshua Spisak <jspisak@andrew.cmu.edu>"
+export JAVIS_MAINTAINER="Jiahe <jiahex@andrew.cmu.edu>"
 
 if [[ $EUID == 0 ]] && [[ ! $JAVIS_FORCE_ROOT == true ]]; then
     echo "Do not run this script as root (set JAVIS_FORCE_ROOT=true to override)"

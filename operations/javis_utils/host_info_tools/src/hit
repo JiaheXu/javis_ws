@@ -1,0 +1,261 @@
+#!/usr/bin/env python3
+"""
+Author: Josh Spisak <jspisak@andrew.cmu.edu>
+Date: 8/26/2021
+Description: a utility to install / enable / disable the host_info_server
+"""
+import subprocess
+import shutil
+import shlex
+import yaml
+import math
+import time
+import sys
+import os
+
+import host_info_tools.argparse as hit_ap
+import host_info_tools.message_interface as hit_mi
+
+config_file_dest = "/etc/host_info_tools/host_info_server.yaml"
+service_file_dest = "/etc/systemd/system/host_info_server.service"
+
+def print_table(col_titles, row_data, title = None):
+    if len(row_data) == 0:
+        raise Exception("No rows...")
+    if len(col_titles) != len(row_data[0]):
+        raise Exception("Must be as many titles as columns.")
+    col_lens = []
+    for col_title in col_titles:
+        col_lens.append(len(col_title))
+    for row in row_data:
+        for i in range(len(col_lens)):
+            col_lens[i] = max(len(row[i]), col_lens[i])
+    format_string = ""
+    for col_len in col_lens:
+        format_string += "%%-%ds "%(col_len+1)
+
+    col_title = format_string%tuple(col_titles)
+    if title is not None:
+        if len(title) + 2 > len(col_title):
+            print(title)
+        else:
+            buffer = len(col_title) - 2 - len(title)
+            print("%s %s %s"%("-"*int(buffer/2), title, "-"*int((buffer +1)/2)))
+    print(col_title)
+    print("-"*len(col_title))
+    for row in row_data:
+        print(format_string%tuple(row))
+
+
+def install():
+    source_dir = "/usr/local"
+
+    if ".local" in __file__:
+        source_dir = os.path.join(os.environ["HOME"], ".local")
+
+
+    tmp_install_dir = os.path.dirname(os.path.realpath(__file__))
+    config_file = os.path.join(source_dir, "host_info_tools/host_info_server.yaml")
+    service_file = os.path.join(source_dir, "host_info_tools/host_info_server.service")
+
+    try:
+        os.mkdir("/etc/host_info_tools")
+    except:
+        pass
+    try:
+        os.remove(service_file_dest)
+    except:
+        pass
+
+    if not os.path.exists(config_file_dest):
+        shutil.copy(config_file, config_file_dest)
+    os.symlink(service_file, service_file_dest)
+
+def enable():
+    if not os.path.exists(service_file_dest):
+        print("Service file does not exist, installing.")
+        install()
+
+    subprocess.check_output(shlex.split("systemctl enable host_info_server"))
+    subprocess.check_output(shlex.split("systemctl start host_info_server"))
+
+def disable():
+    try:
+        subprocess.check_output(shlex.split("systemctl stop host_info_server"))
+        subprocess.check_output(shlex.split("systemctl disable host_info_server"))
+    except Exception as err:
+        print("Disable failed: %s"%(str(err)))
+
+def recache(server_name, server_port, single):
+    client = hit_mi.Client(server_name, server_port)
+    client.requestParamsReload()
+    if not single:
+        host_time = client.getHostTime()
+        results = client.getHostList()
+        host_connections = []
+        host_names = []
+
+        for host in results:
+            if host["ip_addr"] == server_name or host["hostname"] == server_name:
+                continue
+            age = host_time - host["last_update"]
+            if math.fabs(age) > 2.0:
+                print("Ignoring host %s with age %3.2f"%(host["hostname"], age))
+                continue
+            try:
+                host_connections.append(hit_mi.Client(host["ip_addr"], server_port))
+                host_names.append(host["hostname"])
+            except Exception as err:
+                print("Unable to connect to %s, ignoring."%host["hostname"])
+            
+        print("Reloading info on hosts:")
+        for i in range(len(host_connections)):
+            print("    %s"%host_names[i])
+            host_connections[i].requestParamsReload()
+
+        print("Invalidating cache on hosts:")
+        for i in range(len(host_connections)):
+            print("    %s"%host_names[i])
+            host_connections[i].invalidateParamsCache()
+        for conn in host_connections:
+            conn.close()
+
+    client.invalidateParamsCache()
+    client.close()
+
+if __name__ == "__main__":
+    ap = hit_ap.Arguments(["i", "p", "fields"])
+    ap.parse_arguments(sys.argv[1:])
+
+    keyword = ap.get_arg_at(0, "list")
+    help_flag = ap.get_flag_boolean(["h", "help"])
+
+    server_name = ap.get_flag_value(["i"], "127.0.0.1")
+    server_port = int(ap.get_flag_value(["p"], 6753))
+    info_fields = ap.get_flag_value(["params"], None)
+
+    if keyword == "help" or help_flag:
+        print("Host Info Tools.")
+        print("     used to interact with host_info_server instances")
+        print("Usage:")
+        print("  hit <keyword>")
+        print("Keywords:")
+        print("  install : used to install service and config files after a pip install")
+        print("  enable  : enables the host_info_server service")
+        print("  disable : disable the host_info_server service")
+        print("  recache -i <server ip, default 127.0.0.1> -p <server port, default 6753> --single:")
+        print("      requests servers to reload parameters and invalidate it's parameter cache")
+        print("      this causes it to re-load parameters from connected hosts")
+        print("  list -i <server ip, default 127.0.0.1> -p <server port, default 6753> --params <host params to list>:")
+        print("      connect to a server and get a list of hosts it's discovered")
+        print("  params [ param_keyword ] -i <server ip, default 127.0.0.1> -p <server port, default 6753> :")
+        print("      connect to a server and it's info")
+        print("Param Keywords:")
+        print("  dump                     : dumps all the parameters a host has")
+        print("  set <param name> <value> : sets a parameter to a given value")
+    elif keyword == "install":
+        install()
+    elif keyword == "enable":
+        enable()
+    elif keyword == "disable":
+        disable()
+    elif keyword == "list":
+        client = hit_mi.Client(server_name, server_port)
+        results = client.getHostList()
+
+        if len(results) <= 0:
+            print("Server has no connections.")
+        else:
+            keys = ["Hostname", "IP Address", "Age"]
+            fields = []
+            if info_fields is not None:
+                for field in info_fields.split(","):
+                    if len(field) == 0:
+                        continue
+                    fields.append(field)
+                    keys.append(field)
+            
+            rows = []
+            now = time.time()
+            for r in results:
+                row = [r["hostname"], r["ip_addr"], "%3.1f"%(now - r["last_update"])]
+                
+                for field in fields:
+                    if field in r["info"]:
+                        row.append(str(r["info"][field]))
+                    else:
+                        row.append("N/A")
+                
+                rows.append(row)
+            print_table(keys, rows)
+    elif keyword == "params":
+        client = hit_mi.Client(server_name, server_port)
+        action = ap.get_arg_at(1, "dump")
+        if action == "dump":
+            results = client.getParams()
+            exp = ""
+            if ap.get_flag_boolean(["export"]):
+                exp = "export "
+            if len(results) > 0:
+                for k in results:
+                    print("%s%s=\"%s\""%(exp, k, results[k]))
+        elif action == "set":
+            param_name = ap.get_arg_at(2)
+            param_value = ap.get_arg_at(3)
+            if param_name is None or param_value is None:
+                print("Please use --help, invalid arguments.")
+            param_value = yaml.load(param_value, Loader=yaml.Loader)
+            resp = client.setParam(param_name, param_value)
+            if resp["success"]:
+                print(str(resp["value"]))
+            else:
+                print(resp["message"])
+        elif action == "get":
+            param_name = ap.get_arg_at(2)
+            if param_name is None:
+                print("Please use --help, invalid arguments.")
+            results = client.getParams(param_name)
+            if param_name in results:
+                print(results[param_name])
+            else:
+                exit(1)
+        elif action == "delete":
+            param_name = ap.get_arg_at(2)
+            if param_name is None:
+                print("Please use --help, invalid arguments.")
+            resp = client.setParam(param_name, None)
+            if resp["success"]:
+                print("Deleted param: " + param_name)
+            else:
+                print(resp["message"])
+        elif action == "export":
+            file_path = ap.get_arg_at(2)
+            if file_path is None:
+                print("Please use --help, invalid arguments.")
+                exit(1)
+
+            results = client.getParams()
+            with open(file_path, 'w+') as f:
+                yaml.dump(results, f)
+        elif action == "import":
+            file_path = ap.get_arg_at(2)
+            if file_path is None:
+                print("Please use --help, invalid arguments.")
+                exit(1)
+
+            params = {}
+            with open(file_path, 'r') as f:
+                params = yaml.load(f, Loader=yaml.FullLoader)
+            for p in params:
+                resp = client.setParam(p, params[p])
+                if resp["success"]:
+                    print("Set %s to %s"%(p, str(resp["value"])))
+                else:
+                    print(resp["message"])
+        else:
+            print("Unknown param action: '%s', for keyword 'params'"%action)
+    elif keyword == "recache":
+        single = ap.get_flag_boolean(["single"])
+        recache(server_name, server_port, single)
+    else:
+        print("Unkown keyword: %s"%keyword)

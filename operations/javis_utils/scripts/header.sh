@@ -1,6 +1,6 @@
 ##
 # A header containing misc. variables and sources for the terraform scripts
-# Joshua Spisak <joshs333@live.com> July 14, 2020
+# Jiahe <joshs333@live.com> July 14, 2020
 ##
 # Some directory variabls
 __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
