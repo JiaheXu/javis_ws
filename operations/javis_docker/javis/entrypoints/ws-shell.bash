@@ -4,8 +4,8 @@
 # //////////////////////////////////////////////////////////////////////////////
 set -e
 
-usermod -u $JAVIS_USERID developer
-usermod -g $JAVIS_GROUPID developer
+# usermod -u $JAVIS_USERID developer
+# usermod -g $JAVIS_GROUPID developer
 
 # log message
 echo " == Workspace Shell == "
@@ -18,9 +18,6 @@ echo " ==  Install The JAVIS Workspace =="
 # setup roscore IP/hostnames and source the project workspaces
 _SET_ROSCORE=true
 _SET_WS=true
-
-_SET_ROS2="\$SET_ROS2"
-
 _ROS_WS="\$ROS_SOURCED_WORKSPACE"
 _ROS_DISTRO="\$JAVIS_ROS_DISTRO"
 source /docker-entrypoint/ros-env-setup.bash

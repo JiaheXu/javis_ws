@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "source /opt/ros/humble/setup.bash " >> /$HOME/.$1
+echo "source /opt/ros/humble/setup.bash " >> ~/.bashrc
 # TBD
 # //////////////////////////////////////////////////////////////////////////////
 echo "ROS environment setup completed."

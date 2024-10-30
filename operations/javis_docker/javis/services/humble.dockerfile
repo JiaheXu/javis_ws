@@ -312,24 +312,24 @@ RUN sudo apt-get clean \
 # RUN sudo apt update && sudo apt install -y python3-tf2-ros
  
 # copy all the code found the thirdparty directory
-COPY --chown=$USERNAME:$USERNAME thirdparty-software/ /home/$USERNAME/thirdparty-software/
+# COPY --chown=$USERNAME:$USERNAME thirdparty-software/ /home/$USERNAME/thirdparty-software/
+
+# COPY --chown=$USERNAME:$USERNAME entrypoints/ /docker-entrypoint
+# RUN sudo chmod +x -R /docker-entrypoint
+
+# # create ~/.Xauthority
+# RUN touch ~/.Xauthority
+
+# # entrypoint env vars
+# ARG arch=$arch
+# ENV entrypoint_container_path /docker-entrypoint/
  
-# entrypoint env vars
-ARG arch=$arch
-ENV entrypoint_container_path /docker-entrypoint/
+# # add entrypoint scripts (general & system specific)
+# ADD entrypoints/ $entrypoint_container_path/
+# ADD $arch/entrypoints/ $entrypoint_container_path/
  
-# add entrypoint scripts (general & system specific)
-ADD entrypoints/ $entrypoint_container_path/
-ADD $arch/entrypoints/ $entrypoint_container_path/
- 
-# execute entrypoint script
-RUN sudo chmod +x -R $entrypoint_container_path/
- 
-# create empty /home/$USER/.javis directory, to avoid mounting as root in compose volume mount
-# RUN mkdir ~/.javis
- 
-# create ~/.Xauthority
-RUN touch ~/.Xauthority
- 
-# set image to run entrypoint script
+# # execute entrypoint script
+# RUN sudo chmod +x -R $entrypoint_container_path/
+  
+# # set image to run entrypoint script
 # ENTRYPOINT $entrypoint_container_path/docker-entrypoint.bash
