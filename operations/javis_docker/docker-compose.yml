@@ -102,8 +102,8 @@ services:
       - JAVIS_SYSTEM_TYPE=$JAVIS_SYSTEM_TYPE
       - JAVIS_SYSTEM_COMPONENT=$JAVIS_SYSTEM_COMPONENT
       - JAVIS_SETUP_SUPPRESS_CHECKS=true
-    entrypoint:
-      - /docker-entrypoint/ws-shell.bash
+    # entrypoint:
+    #   - /docker-entrypoint/ws-shell.bash
     tty: true
     # use host network
     network_mode: "host"

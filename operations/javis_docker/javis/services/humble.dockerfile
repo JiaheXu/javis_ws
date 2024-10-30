@@ -90,7 +90,7 @@ RUN sudo apt install software-properties-common \
 
 RUN sudo apt update && sudo apt upgrade -y \
  && sudo apt install -y ros-humble-ros-base ros-dev-tools
-RUN sudo apt-get install -y --no-install-recommends \
+RUN sudo apt update && sudo apt-get install -y --no-install-recommends \
     blt ca-certificates-java default-jdk default-jdk-headless default-jre default-jre-headless \
     default-libmysqlclient-dev fonts-lyx gdal-data gir1.2-ibus-1.0 java-common libaom-dev \
     libarmadillo-dev libarmadillo10 libarpack2 libarpack2-dev libasound2 libasound2-data \
@@ -123,8 +123,9 @@ RUN sudo apt-get install -y --no-install-recommends \
     libboost1.74-dev libboost1.74-tools-dev libbrotli-dev libcfitsio-dev libcfitsio9 libcharls-dev \
     libcharls2 libclang1-14 libdav1d-dev libdbus-1-dev libdc1394-25 libdc1394-dev libde265-0 \
     libde265-dev libdecor-0-0 libdecor-0-dev libdeflate-dev libdouble-conversion-dev \
-    libdouble-conversion3 libdraco-dev libdraco4 libdrm-amdgpu1 libdrm-dev libdrm-etnaviv1 \
-    libdrm-freedreno1 libdrm-nouveau2 libdrm-radeon1 libdrm-tegra0 libegl-dev libegl-mesa0 libegl1 \
+    libdouble-conversion3 libdraco-dev libdraco4 libdrm-amdgpu1 libdrm-dev \
+    # libdrm-etnaviv1 libdrm-freedreno1 libdrm-tegra0 \
+    libdrm-nouveau2 libdrm-radeon1 libegl-dev libegl-mesa0 libegl1 \
     libegl1-mesa-dev libevdev2 libexif-dev libexif12 libflann-dev libflann1.9 libfontconfig-dev \
     libfontconfig1-dev libfreetype-dev libfreetype6-dev libfreexl-dev libfreexl1 libfyba-dev libfyba0 \
     libgbm-dev libgbm1 libgdal-dev libgdal30 libgdcm-dev libgdcm3.0 libgeos-c1v5 libgeos-dev \
@@ -325,10 +326,10 @@ ADD $arch/entrypoints/ $entrypoint_container_path/
 RUN sudo chmod +x -R $entrypoint_container_path/
  
 # create empty /home/$USER/.javis directory, to avoid mounting as root in compose volume mount
-RUN mkdir ~/.javis
+# RUN mkdir ~/.javis
  
 # create ~/.Xauthority
 RUN touch ~/.Xauthority
  
 # set image to run entrypoint script
-ENTRYPOINT $entrypoint_container_path/docker-entrypoint.bash
+# ENTRYPOINT $entrypoint_container_path/docker-entrypoint.bash

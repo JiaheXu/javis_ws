@@ -12,8 +12,8 @@ services:
     extends:
       service: base
     container_name: javis_common
-    environment:
-      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/devel/javis_common/setup.bash
+    # environment:
+      # - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/d/javis_common/setup.bash
     volumes:
       - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
       - /tmp/argus_socket:/tmp/argus_socket
