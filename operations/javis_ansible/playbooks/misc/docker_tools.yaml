@@ -69,15 +69,15 @@
     shell: python3 -m pip install setuptools_rust testresources
     when: install_docker_compose and "x86" not in arch_type
 
-  - name: install docker compose (arm)
-    become: true
-    shell: python3 -m pip install -I docker-compose
-    register: docker_version_out
-    when: install_docker_compose and "x86" not in arch_type
+  # - name: install docker compose (arm)
+  #   become: true
+  #   shell: python3 -m pip install -I docker-compose
+  #   register: docker_version_out
+  #   when: install_docker_compose and "x86" not in arch_type
 
   - name: validate docker compose
     become: true
-    shell: docker-compose --version
+    shell: docker compose version
     register: docker_compose_version_out
     when: install_docker_compose
 

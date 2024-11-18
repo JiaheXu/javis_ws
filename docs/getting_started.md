@@ -8,7 +8,7 @@ If you want to change your hostname please follow the instructions [here](https:
 
 ## 0.prerequisite
 
-        sudo chown -R javis:javis /external # only for new payloads
+        #sudo chown -R javis:javis /external # only for new payloads
         
         sudo apt-get update -y
         sudo apt upgrade -y

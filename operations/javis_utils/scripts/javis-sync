@@ -170,7 +170,7 @@ function perform_sync() {
         fi
 
         main "Syncing to $host"
-        rcsync_to_command="rsync $misc_options $includes_opts $excludes_opts $JAVIS_PATH/* $host:/external/javis_ws"
+        rcsync_to_command="rsync $misc_options $includes_opts $excludes_opts $JAVIS_PATH/* $host:~/javis_ws"
         if [[ $DRY == true ]]; then
             debug "-- Dry Run --"
             echo $rcsync_to_command

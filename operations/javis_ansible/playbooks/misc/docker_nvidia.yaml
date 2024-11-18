@@ -119,7 +119,7 @@
     when: install_nvidia_docker and "x86" in arch_type
 
   - name: validate nvidia-docker
-    shell: nvidia-docker --version
+    shell: docker --version
     register: docker_version_out
     when: install_nvidia_docker
 

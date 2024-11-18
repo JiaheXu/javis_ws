@@ -17,12 +17,13 @@
 
     - name: Set Logging Dir (Jetson)
       set_fact:
-        logging_dir: /external/logging
+        logging_dir: ~/logging
       when: jetson_orin
 
     - name: Create logging dir
       file:
-        path: "{{ logging_dir }}"
+        # path: "{{ logging_dir }}"
+        path: "~/logging"
         state: directory
   
     - name: "Create {{ javis.deploy_conf }}"
