@@ -1,6 +1,11 @@
 version: '2.3'
 services:
   # ////////////////////////////////////////////////////////////////////////////
+  # base image service, that extends any one of the system group services
+  # ////////////////////////////////////////////////////////////////////////////
+
+
+  # ////////////////////////////////////////////////////////////////////////////
   # Basic JAVIS Service (Rviz, generally shared code, a little sim code for viz)
   # ////////////////////////////////////////////////////////////////////////////
   javis_common:
@@ -42,8 +47,8 @@ services:
       service: base
     container_name: javis_autonomy
     environment:
-      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/devel/javis_autonomy/setup.bash
-      - SET_ROS2=false
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_autonomy/setup.bash
+
 
 
   # ////////////////////////////////////////////////////////////////////////////
@@ -52,14 +57,43 @@ services:
   javis_drivers:
     image: javis/${JAVIS_ARCH_T}.drivers:${DOCKER_IMAGE_VERSION}
     build:
+      args:
+        - ARCH_T=$JAVIS_ARCH_T
       context: ${JAVIS_DOCKER_PATH}/javis/
       dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/drivers.dockerfile
     extends:
       service: base
     container_name: javis_drivers
     environment:
-      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/devel/javis_drivers/setup.bash
-      - SET_ROS2=false    
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_drivers/setup.bash
+    volumes:
+      - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
+      - /tmp/argus_socket:/tmp/argus_socket
+      - /tmp:/tmp
+    devices:
+      - /dev/i2c-8:/dev/i2c-8
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
+      - /dev/video3:/dev/video3
+      - /dev/video4:/dev/video4
+      - /dev/video5:/dev/video5
+      - /dev/video6:/dev/video6
+    ipc: "host"
+
+  # ////////////////////////////////////////////////////////////////////////////
+  # drivers service (motor drivers / imu / velodyne / etc...)
+  # ////////////////////////////////////////////////////////////////////////////
+  javis_medical:
+    image: javis/${JAVIS_ARCH_T}.medical:${DOCKER_IMAGE_VERSION}
+    build:
+      context: ${JAVIS_DOCKER_PATH}/javis/
+      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/medical.dockerfile
+    extends:
+      service: base
+    container_name: javis_medical
+    environment:
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_medical/setup.bash
     volumes:
       - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
       - /tmp/argus_socket:/tmp/argus_socket
@@ -90,8 +124,8 @@ services:
     #ulimits:
     #  nice: 40
     environment:
-      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/devel/javis_estimation/setup.bash
-      - SET_ROS2=false
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_estimation/setup.bash
+
     volumes:
       - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
       - /tmp/argus_socket:/tmp/argus_socket
@@ -119,6 +153,6 @@ services:
     container_name: javis_sim
     privileged: true
     environment:
-      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/devel/javis_sim/setup.bash
-      - SET_ROS2=false
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_sim/setup.bash
+
 

@@ -12,17 +12,26 @@
 - JAVIS_LOAM_DIR=$JAVIS_SRC/javis_estimation
 - JAVIS_SIM_DIR=$JAVIS_SRC/javis_sim
 
+- JAVIS_LOAM_DIR=$JAVIS_SRC/javis_medical
+
 - JAVIS_ROS2_DIR=$JAVIS_SRC/javis_ros2
 
 - JAVIS_AUTON_DIR=$JAVIS_SRC/javis_autonomy
 - JAVIS_BUILD_PROFILE=default
 
+# to add docker
 - DOCKER_COMPOSE_EXTEND=javis
 - common:
   - +docker:javis_common
   - +extend: javis_common/catkin
 - common:
   - +extend: javis_common/docker
+
+- medical:
+  - +docker:javis_medical
+  - +extend: javis_medical/catkin
+- medical:
+  - +extend: javis_medical/docker
 
 - drivers:
   - +docker:javis_drivers

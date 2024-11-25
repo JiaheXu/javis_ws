@@ -296,7 +296,7 @@ RUN sudo apt-get update --no-install-recommends \
 
 RUN python3 -m pip install --upgrade pip
 
-RUN sudo pip3 install \
+RUN pip3 install \
   setuptools==62.4 \
   ipdb \
   ipython \
@@ -333,3 +333,4 @@ RUN sudo apt-get clean \
   
 # # set image to run entrypoint script
 # ENTRYPOINT $entrypoint_container_path/docker-entrypoint.bash
+RUN echo "ARG=${user_id}"
