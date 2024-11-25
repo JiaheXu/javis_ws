@@ -5,7 +5,7 @@ services:
       context: ${JAVIS_DOCKER_PATH}/
       args:
         #- BASE_DOCKER_IMAGE=nvcr.io/nvidia/l4t-base:r35.1.0
-        - BASE_DOCKER_IMAGE=nvcr.io/nvidia/l4t-ml:r35.1.0-py3
+        - BASE_DOCKER_IMAGE=nvcr.io/nvidia/l4t-ml:r36.2.0-py3
         - CPU_ARCH=arm64
         # - BASE_DOCKER_IMAGE=nvcr.io/nvidia/l4t-ml:r35.2.1-py3
     volumes:
