@@ -1,0 +1,18 @@
+#############################################################
+# Required Environment Variabls:
+# - JAVIS_COMMON_DIR: location of javis_common src directory
+# - JAVIS_LOAM_DIR: location of javis_loam src directory
+# - JAVIS_BUILD_PROFILE: profile to catkin config to
+#############################################################
+- '[ ! -z "$JAVIS_COMMON_DIR" ] || ( echo "ERROR: JAVIS_COMMON_DIR not set" && exit 1 )'
+- '[ ! -z "$JAVIS_LOAM_DIR" ] || ( echo "ERROR: JAVIS_LOAM_DIR not set" && exit 1 )'
+- '[ ! -z "$JAVIS_BUILD_PROFILE" ] || ( echo "ERROR: JAVIS_BUILD_PROFILE not set" && exit 1 )'
+- CATKIN_PROFILE=$JAVIS_BUILD_PROFILE
+- deps:
+  - CATKIN_DIR=$JAVIS_COMMON_DIR
+  - +extend: actions/catkin/build
+  - +extend: actions/catkin/clean
+- core:
+  - CATKIN_DIR=$JAVIS_LOAM_DIR
+  - +extend: actions/catkin/build
+  - +extend: actions/catkin/clean

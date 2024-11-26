@@ -57,10 +57,14 @@
 - sim:
   - +extend: javis_sim/docker
 
-
+- spot:
+  - +docker:javis_spot
+  - +extend: javis_spot/catkin
+- spot:
+  - +extend: javis_spot/docker
 
 - ros2:
-  - +docker:javis_ros2
+  - +docker:javis_ros
   # - +extend: javis_ros2/catkin
 - ros2:
   - +extend: javis_ros2/docker
