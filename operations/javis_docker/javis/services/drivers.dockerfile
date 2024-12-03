@@ -5,53 +5,49 @@ ARG JAVIS_ROS_DISTRO=$JAVIS_ROS_DISTRO
 ARG ARCH_T=$ARCH_T
 ARG DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION
 FROM javis/${ARCH_T}.ros.${JAVIS_ROS_DISTRO}:${DOCKER_IMAGE_VERSION}
-RUN echo "ARG=${ARCH_T}"
-#for spot
-RUN pip3 install --no-warn-script-location \
-    aiortc==1.5.0 \
-    bosdyn-api==4.1.0 \
-    bosdyn-choreography-client==4.1.0 \
-    bosdyn-client==4.1.0 \
-    bosdyn-core==4.1.0 \
-    bosdyn-mission==4.1.0 \
-    grpcio==1.59.3 \
-    image==1.5.33 \
-    inflection==0.5.1 \
-    opencv-python>=4.5.4 \
-    open3d==0.18.0 \
-    protobuf==4.22.1 \
-    pytest==7.3.1 \
-    pytest-cov==4.1.0 \
-    pytest-xdist==3.5.0 \
-    pyyaml>=6.0 \
-    setuptools==59.6.0
 
-
-# Install ROS dependencies
-# TODO(jschornak-bdai): use rosdep to install these packages by parsing dependencies listed in package.xml
-ARG ROS_DISTRO=humble
-RUN sudo apt update
-RUN sudo apt install -y ros-humble-joint-state-publisher-gui ros-$ROS_DISTRO-xacro ros-$ROS_DISTRO-tl-expected
-# ros-$ROS_DISTRO-depth-image-proc
-# Install the dist-utils
-RUN sudo apt-get install -y python3-distutils
-RUN sudo apt-get install -y python3-apt
-RUN pip3 install --force-reinstall -v "setuptools==59.6.0"
-
-# ARG ARCH=$CPU_ARCH
-# CMD if [ "$ARCH_T" = "x86"] ; then ARG ARCH="amd64"; else echo ARG ARCH="arm64" ; fi
-
-ENV ARCH="arm64"
-ARG SDK_VERSION="4.1.0"
-ARG MSG_VERSION="${SDK_VERSION}-4"
-
-# # Install bosdyn_msgs - automatic conversions of BD protobufs to ROS messages
-RUN wget -q -O /tmp/ros-humble-bosdyn_msgs_${MSG_VERSION}-jammy_${ARCH}.run https://github.com/bdaiinstitute/bosdyn_msgs/releases/download/${MSG_VERSION}/ros-humble-bosdyn_msgs_${MSG_VERSION}-jammy_${ARCH}.run
-RUN chmod +x /tmp/ros-humble-bosdyn_msgs_${MSG_VERSION}-jammy_${ARCH}.run
-RUN yes | sudo /tmp/ros-humble-bosdyn_msgs_${MSG_VERSION}-jammy_${ARCH}.run  --nox11
-RUN rm /tmp/ros-humble-bosdyn_msgs_${MSG_VERSION}-jammy_${ARCH}.run
-
-# Install spot-cpp-sdk
-RUN wget -q -O /tmp/spot-cpp-sdk_${SDK_VERSION}_${ARCH}.deb https://github.com/bdaiinstitute/spot-cpp-sdk/releases/download/v${SDK_VERSION}/spot-cpp-sdk_${SDK_VERSION}_${ARCH}.deb
-RUN sudo dpkg -i /tmp/spot-cpp-sdk_${SDK_VERSION}_${ARCH}.deb
-RUN rm /tmp/spot-cpp-sdk_${SDK_VERSION}_${ARCH}.deb
+# for lidar & usb cam
+RUN sudo apt install -y \
+    ros-humble-pcl-ros \
+    ros-humble-tf2-eigen \
+    ros-humble-rviz2 \
+    build-essential \
+    libeigen3-dev \
+    libjsoncpp-dev \
+    libspdlog-dev \
+    libcurl4-openssl-dev \
+    cmake \
+    python3-colcon-common-extensions \
+    ros-humble-rosbag2-storage-mcap \
+    ros-humble-can-msgs \
+    ros-humble-serial-driver \
+#     # gstreamer
+#     gir1.2-gst-plugins-bad-1.0 \
+#     gir1.2-gst-plugins-base-1.0 \
+#     gir1.2-gstreamer-1.0 \
+#     gir1.2-gudev-1.0 \
+#     gstreamer1.0-alsa \
+#     gstreamer1.0-gtk3 \
+#     gstreamer1.0-plugins-ugly \
+#     gstreamer1.0-pulseaudio \
+#     gstreamer1.0-qt5 \
+#     gstreamer1.0-tools \
+#     libgstreamer-plugins-base1.0-dev \
+#     libgstreamer-plugins-good1.0-dev \
+#     libgstreamer1.0-dev \
+#     liba52-0.7.4 \
+#     libcdio19 \
+#     libdw-dev \
+#     libelf-dev \
+#     libgudev-1.0-dev \
+#     libmpeg2-4 \
+#     libopencore-amrnb0 \
+#     libopencore-amrwb0 \
+#     libopenexr-dev \
+#     liborc-0.4-dev \
+#     liborc-0.4-dev-bin \
+#     libqt5waylandclient5 \
+#     libqt5x11extras5 \
+#     libsidplay1v5 \
+#     libunwind-dev \
+#     libx11-xcb-dev

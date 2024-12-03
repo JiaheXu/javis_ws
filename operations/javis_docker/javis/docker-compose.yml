@@ -134,21 +134,21 @@ services:
     ipc: "host"
 
   # ////////////////////////////////////////////////////////////////////////////
-  # state estimation service (loam / super odometry / etc...)
+  # state estimation service (SLAM etc
   # ////////////////////////////////////////////////////////////////////////////
-  javis_estimation:
-    image: javis/${JAVIS_ARCH_T}.state_estimation:${DOCKER_IMAGE_VERSION}
+  javis_perception:
+    image: javis/${JAVIS_ARCH_T}.perception:${DOCKER_IMAGE_VERSION}
     build:
-      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/estimation.dockerfile
+      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/perception.dockerfile
       context: ${JAVIS_DOCKER_PATH}/javis/
     extends:
       service: base
-    container_name: javis_estimation
+    container_name: javis_perception
     #privileged: true
     #ulimits:
     #  nice: 40
     environment:
-      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_estimation/setup.bash
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_perception/setup.bash
 
     volumes:
       - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
@@ -164,6 +164,48 @@ services:
       - /dev/video5:/dev/video5
       - /dev/video6:/dev/video6
     ipc: "host"
+
+
+  # ////////////////////////////////////////////////////////////////////////////
+  # llava
+  # ////////////////////////////////////////////////////////////////////////////
+  javis_llava:
+    image: javis/${JAVIS_ARCH_T}.llava:${DOCKER_IMAGE_VERSION}
+    build:
+      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/llava.dockerfile
+      context: ${JAVIS_DOCKER_PATH}/javis/
+    extends:
+      service: base
+    container_name: javis_llava
+    #privileged: true
+    #ulimits:
+    #  nice: 40
+    environment:
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_llava/setup.bash
+
+    volumes:
+      - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
+      - /tmp/argus_socket:/tmp/argus_socket
+      - /tmp:/tmp
+    devices:
+      - /dev/i2c-8:/dev/i2c-8
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
+      - /dev/video3:/dev/video3
+      - /dev/video4:/dev/video4
+      - /dev/video5:/dev/video5
+      - /dev/video6:/dev/video6
+    ipc: "host"
+
+
+
+
+
+
+
+
+
   # ////////////////////////////////////////////////////////////////////////////
   # Simulation stuff!! (should be a stand in replacement for drivers / state estimation)
   # ////////////////////////////////////////////////////////////////////////////

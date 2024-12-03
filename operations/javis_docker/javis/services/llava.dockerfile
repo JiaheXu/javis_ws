@@ -1,40 +1,20 @@
 # //////////////////////////////////////////////////////////////////////////////
-# javis common, ros humble dockerfile -- version: 0.1
+# javis common, ros melodic dockerfile -- version: 0.1
 # //////////////////////////////////////////////////////////////////////////////
-ARG BASE_DOCKER_IMAGE
-# Ubuntu 18.04 with nvidia-docker2 beta opengl support
-FROM $BASE_DOCKER_IMAGE
+# ARG BASE_DOCKER_IMAGE
 
-# //////////////////////////////////////////////////////////////////////////////
-# general tools install
 
-ARG DEBIAN_FRONTEND=noninteractive
+ARG JAVIS_ROS_DISTRO=$JAVIS_ROS_DISTRO
+ARG ARCH_T=$ARCH_T
+ARG DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION
+FROM dustynv/llava:r36.2.0
+# for ros2
+RUN apt update
 
-RUN apt-get update --no-install-recommends \ 
-    && apt-get install -y apt-utils 
-
-RUN apt-get install -y \
-  build-essential \
-  cmake \
-  cppcheck \
-  gdb \
-  git \
-  lsb-release \
-  software-properties-common \
-  sudo \
-  vim \
-  wget \
-  tmux \
-  curl \
-  less \
-  net-tools \
-  byobu \
-  libgl-dev \
-  iputils-ping \
-  nano \
-  unzip \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
+RUN apt install software-properties-common -y \
+ && apt update && apt install curl -y \
+ && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
 # Add a user with the same user_id as the user outside the container
 # Requires a docker build argument `user_id`
@@ -45,52 +25,9 @@ RUN useradd -U --uid ${user_id} -ms /bin/bash $USERNAME \
  && adduser $USERNAME sudo \
  && echo "$USERNAME ALL=NOPASSWD: ALL" >> /etc/sudoers.d/$USERNAME
 
-# Commands below run as the developer user
-USER $USERNAME
-
-# When running a container start in the developer's home folder
-WORKDIR /home/$USERNAME
-
-# Set the timezone
-RUN export DEBIAN_FRONTEND=noninteractive \
- && sudo apt-get update \
- && sudo -E apt-get install -y \
-   tzdata \
- && sudo ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime \
- && sudo dpkg-reconfigure --frontend noninteractive tzdata \
- && sudo apt-get clean 
-
-
-
-RUN mkdir ~/.javis
-
-RUN touch ~/.Xauthority
-
-RUN sudo usermod -a -G dialout developer \
- && sudo usermod -a -G tty developer \
- && sudo usermod -a -G video developer \
- && sudo usermod -a -G root developer \
- && sudo groupadd -f -r gpio \
- && sudo usermod -a -G gpio developer
-
-# for ros2
-RUN sudo apt update && sudo apt install locales \
- && sudo locale-gen en_US en_US.UTF-8 \
- && sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
- && export LANG=en_US.UTF-8
-
-RUN sudo apt install software-properties-common \
- && sudo add-apt-repository universe \
- && sudo apt update && sudo apt install curl -y \
- && sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
- && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-
-# RUN sudo chown -R developer:developer /usr/local
-# RUN sudo chown -R developer:developer /etc/
-
-RUN sudo apt update && sudo apt upgrade -y \
- && sudo apt install -y ros-humble-ros-base ros-dev-tools
-RUN sudo apt update && sudo apt-get install -y --no-install-recommends \
+RUN sudo apt upgrade -y \
+ && sudo apt install -y ros-humble-ros-base ros-dev-tools 
+RUN sudo apt-get install -y --no-install-recommends \
     blt ca-certificates-java default-jdk default-jdk-headless default-jre default-jre-headless \
     default-libmysqlclient-dev fonts-lyx gdal-data gir1.2-ibus-1.0 java-common libaom-dev \
     libarmadillo-dev libarmadillo10 libarpack2 libarpack2-dev libasound2 libasound2-data \
@@ -123,9 +60,8 @@ RUN sudo apt update && sudo apt-get install -y --no-install-recommends \
     libboost1.74-dev libboost1.74-tools-dev libbrotli-dev libcfitsio-dev libcfitsio9 libcharls-dev \
     libcharls2 libclang1-14 libdav1d-dev libdbus-1-dev libdc1394-25 libdc1394-dev libde265-0 \
     libde265-dev libdecor-0-0 libdecor-0-dev libdeflate-dev libdouble-conversion-dev \
-    libdouble-conversion3 libdraco-dev libdraco4 libdrm-amdgpu1 libdrm-dev \
-    # libdrm-etnaviv1 libdrm-freedreno1 libdrm-tegra0 \
-    libdrm-nouveau2 libdrm-radeon1 libegl-dev libegl-mesa0 libegl1 \
+    libdouble-conversion3 libdraco-dev libdraco4 libdrm-amdgpu1 libdrm-dev libdrm-etnaviv1 \
+    libdrm-freedreno1 libdrm-nouveau2 libdrm-radeon1 libdrm-tegra0 libegl-dev libegl-mesa0 libegl1 \
     libegl1-mesa-dev libevdev2 libexif-dev libexif12 libflann-dev libflann1.9 libfontconfig-dev \
     libfontconfig1-dev libfreetype-dev libfreetype6-dev libfreexl-dev libfreexl1 libfyba-dev libfyba0 \
     libgbm-dev libgbm1 libgdal-dev libgdal30 libgdcm-dev libgdcm3.0 libgeos-c1v5 libgeos-dev \
@@ -228,109 +164,5 @@ RUN sudo apt update && sudo apt-get install -y --no-install-recommends \
     ros-humble-common-interfaces \
     ros-humble-camera-info-manager
 
-RUN sudo -E rosdep init
-RUN rosdep update
 
-RUN sudo apt-get update --no-install-recommends \
- && sudo apt-get install -y \
-  gstreamer1.0-plugins-good \
-  gstreamer1.0-plugins-bad \
-  gstreamer1.0-libav\
-  python3-pip \
-  python3-rosdep \
-  python3-rosinstall \
-  python3-rosinstall-generator \
-  python3-wstool \
-  build-essential \
-  python3-colcon-common-extensions \
-  ros-humble-rviz2 \
-  ros-humble-turtle-tf2-py \
-  ros-humble-tf2-ros \
-  ros-humble-tf2-tools \
-  ros-humble-turtlesim \
-  ros-humble-nmea-msgs \
-  ros-humble-geographic-msgs \
-  ros-humble-diagnostic-updater \
-  ros-humble-robot-localization \
-  libpcap-dev \
-  libgoogle-glog-dev \
-  libgflags-dev \
-  libatlas-base-dev \
-  libsuitesparse-dev \
-  libparmetis-dev \
-  libeigen3-dev \
-  libfmt-dev \
-  ros-humble-domain-bridge \
-  ros-humble-rosbag2-storage-mcap \
-  ros-humble-can-msgs \
-  ros-humble-serial-driver \
-  gir1.2-gst-plugins-bad-1.0 \
-  gir1.2-gst-plugins-base-1.0 \
-  gir1.2-gstreamer-1.0 \
-  gir1.2-gudev-1.0 \
-  gstreamer1.0-alsa \
-  gstreamer1.0-gtk3 \
-  gstreamer1.0-plugins-ugly \
-  gstreamer1.0-pulseaudio \
-  gstreamer1.0-qt5 \
-  gstreamer1.0-tools \
-  libgstreamer-plugins-base1.0-dev \
-  libgstreamer-plugins-good1.0-dev \
-  libgstreamer1.0-dev \
-  liba52-0.7.4 \
-  libcdio19 \
-  libdw-dev \
-  libelf-dev \
-  libgudev-1.0-dev \
-  libmpeg2-4 \
-  libopencore-amrnb0 \
-  libopencore-amrwb0 \
-  libopenexr-dev \
-  liborc-0.4-dev \
-  liborc-0.4-dev-bin \
-  libqt5waylandclient5 \
-  libqt5x11extras5 \
-  libsidplay1v5 \
-  libunwind-dev \
-  libx11-xcb-dev
-
-RUN python3 -m pip install --upgrade pip
-
-RUN pip3 install \
-  setuptools==62.4 \
-  ipdb \
-  ipython \
-  nvitop==1.3.2 \
-  Jetson.GPIO
-
-# RUN mkdir /home/developer/thirdparty-software
-
-# Clean up :)
-RUN sudo apt-get clean \
-  && sudo rm -rf /var/lib/apt/lists/*
- 
-# RUN sudo apt update && sudo apt install -y python3-tf2-ros
- 
-# copy all the code found the thirdparty directory
-# COPY --chown=$USERNAME:$USERNAME thirdparty-software/ /home/$USERNAME/thirdparty-software/
-
-# COPY --chown=$USERNAME:$USERNAME entrypoints/ /docker-entrypoint
-# RUN sudo chmod +x -R /docker-entrypoint
-
-# # create ~/.Xauthority
-# RUN touch ~/.Xauthority
-
-# # entrypoint env vars
-# ARG arch=$arch
-# ENV entrypoint_container_path /docker-entrypoint/
- 
-# # add entrypoint scripts (general & system specific)
-# ADD entrypoints/ $entrypoint_container_path/
-# ADD $arch/entrypoints/ $entrypoint_container_path/
- 
-# # execute entrypoint script
-# RUN sudo chmod +x -R $entrypoint_container_path/
-  
-# # set image to run entrypoint script
-# ENTRYPOINT $entrypoint_container_path/docker-entrypoint.bash
-RUN sudo apt install -y libeigen3-dev libfmt-dev ros-humble-domain-bridge
+RUN pip3 install cv_bridge opencv-python

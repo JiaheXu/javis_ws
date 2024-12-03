@@ -6,15 +6,14 @@
 - JAVIS_WS=$JAVIS_PATH
 - JAVIS_SRC=$JAVIS_SRC_PATH
 - JAVIS_DEVEL_DIR=$JAVIS_WS/devel
+
 - JAVIS_COMMON_DIR=$JAVIS_SRC/javis_common
-- JAVIS_CAMERAS_DIR=$JAVIS_SRC/javis_cameras
+
 - JAVIS_DRIVERS_DIR=$JAVIS_SRC/javis_drivers
-- JAVIS_LOAM_DIR=$JAVIS_SRC/javis_estimation
-- JAVIS_SIM_DIR=$JAVIS_SRC/javis_sim
 
-- JAVIS_LOAM_DIR=$JAVIS_SRC/javis_medical
+- JAVIS_PERCEPTION_DIR=$JAVIS_SRC/javis_perception
 
-- JAVIS_ROS2_DIR=$JAVIS_SRC/javis_ros2
+- JAVIS_SPOT_DIR=$JAVIS_SRC/javis_spot
 
 - JAVIS_AUTON_DIR=$JAVIS_SRC/javis_autonomy
 - JAVIS_BUILD_PROFILE=default
@@ -23,51 +22,48 @@
 - DOCKER_COMPOSE_EXTEND=javis
 - common:
   - +docker:javis_common
-  - +extend: javis_common/catkin
+  # - +extend: javis_common/catkin
 - common:
   - +extend: javis_common/docker
 
 - medical:
   - +docker:javis_medical
-  - +extend: javis_medical/catkin
+  # - +extend: javis_medical/catkin
 - medical:
   - +extend: javis_medical/docker
 
 - drivers:
   - +docker:javis_drivers
-  - +extend: javis_drivers/catkin
+  # - +extend: javis_drivers/catkin
 - drivers:
   - +extend: javis_drivers/docker
 
-- estimation:
-  - +docker:javis_estimation
-  - +extend: javis_estimation/catkin
-- estimation:
-  - +extend: javis_estimation/docker
+- perception:
+  - +docker:javis_perception
+  # - +extend: javis_perception/catkin
+- perception:
+  - +extend: javis_perception/docker
+
+- llava:
+  - +docker:javis_llava
+  # - +extend: javis_perception/catkin
+- llava:
+  - +extend: javis_llava/docker
 
 - autonomy:
   - +docker:javis_autonomy
-  - +extend: javis_autonomy/catkin
+  # - +extend: javis_autonomy/catkin
 - autonomy:
   - +extend: javis_autonomy/docker
 
-- sim:
-  - +docker:javis_sim
-  - +extend: javis_sim/catkin
-- sim:
-  - +extend: javis_sim/docker
 
 - spot:
   - +docker:javis_spot
-  - +extend: javis_spot/catkin
+  # - +extend: javis_spot/catkin
 - spot:
   - +extend: javis_spot/docker
 
-- ros2:
-  - +docker:javis_ros
-  # - +extend: javis_ros2/catkin
-- ros2:
-  - +extend: javis_ros2/docker
+
 
 
 - docker:
