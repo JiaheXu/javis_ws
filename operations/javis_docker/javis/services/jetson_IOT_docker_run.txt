@@ -1,0 +1,19 @@
+docker run --runtime nvidia -it --network host \
+		--shm-size=8g \
+		--volume /tmp/argus_socket:/tmp/argus_socket \
+		--volume /etc/enctune.conf:/etc/enctune.conf \
+		--volume /etc/nv_tegra_release:/etc/nv_tegra_release \
+		--volume /tmp/nv_jetson_model:/tmp/nv_jetson_model \
+		--volume /var/run/dbus:/var/run/dbus \
+		--volume /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket \
+		--volume /var/run/docker.sock:/var/run/docker.sock \
+		--volume ~/jetson-containers/data:/data \
+		-v /etc/localtime:/etc/localtime:ro -v /etc/timezone:/etc/timezone:ro \
+		--name test -it 56c732432446
+	
+	
+ENV TRANSFORMERS_CACHE=/data/models/huggingface \
+    HUGGINGFACE_HUB_CACHE=/data/models/huggingface \
+    HF_HOME=/data/models/huggingface
+COPY huggingface-downloader /usr/local/bin/
+COPY huggingface-downloader.py /usr/local/bin/_huggingface-downloader.py

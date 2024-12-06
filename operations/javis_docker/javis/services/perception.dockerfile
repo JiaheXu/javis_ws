@@ -10,13 +10,14 @@ RUN sudo apt update && sudo apt install -y libnl-utils libtbb-dev
 
 # SuperOdom deps
 RUN sudo apt-get update \
-    && sudo apt-get install -y --no-install-recommends \
-        libgoogle-glog-dev \
-        libgflags-dev \
-        libatlas-base-dev \
-        libsuitesparse-dev \
-        libparmetis-dev \
-    && sudo apt-get clean 
+    && sudo apt install -y --no-install-recommends \
+    cmake \
+    libgoogle-glog-dev \
+    libgflags-dev \
+    libatlas-base-dev \
+    libeigen3-dev \
+    libsuitesparse-dev \
+    libparmetis-dev 
 
 
 RUN wget -q  https://files.pythonhosted.org/packages/0c/00/1a14450d315a6f43728c40e3c15fb22648474106d98d06eec7994c6ccd2f/mediapipe-0.10.15-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
@@ -25,15 +26,7 @@ RUN pip3 install mediapipe-0.10.15-cp310-cp310-manylinux_2_17_aarch64.manylinux2
 
 RUN mkdir /home/developer/thirdparty-software
 
-# Install Gtsam 
-RUN cd ~/thirdparty-software\
- && git clone https://github.com/borglab/gtsam.git --branch 4.2.0 \
- && cd gtsam \
- && mkdir build && cd build \
- && cmake -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF .. \
- && sudo make install -j8 \
- && cd ~ 
- #&& sudo rm -rf ~/thirdparty-software/gtsam
+
 
 RUN cd ~/thirdparty-software \
  && git clone http://github.com/strasdat/Sophus.git \
@@ -64,4 +57,16 @@ RUN cd ~/thirdparty-software \
  && cmake .. \
  && sudo make install -j8 \
  && cd ~ 
- #&& sudo rm -rf ~/thirdparty-software/ceres-solver 
+ #&& sudo rm -rf ~/thirdparty-software/ceres-solver
+
+ 
+
+# Install Gtsam 
+RUN cd ~/thirdparty-software\
+  && git clone https://github.com/borglab/gtsam.git \
+  && cd gtsam && git checkout 4abef92\
+  && mkdir build && cd build \
+  && cmake -DGTSAM_USE_SYSTEM_EIGEN=ON -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF .. \
+  && sudo make install -j8 \
+  && cd ~ 
+  #&& sudo rm -rf ~/thirdparty-software/gtsam

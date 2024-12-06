@@ -7,7 +7,7 @@
 ARG JAVIS_ROS_DISTRO=$JAVIS_ROS_DISTRO
 ARG ARCH_T=$ARCH_T
 ARG DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION
-FROM dustynv/llava:r36.2.0
+FROM dustynv/nanosam:r36.2.0
 # for ros2
 RUN apt update
 
@@ -223,19 +223,6 @@ RUN sudo apt-get install -y --no-install-recommends \
 
 RUN pip3 install cv_bridge opencv-python
 
-RUN mkdir -p /home/developer/data/models/huggingface
-
 ENV TRANSFORMERS_CACHE=/home/developer/data/models/huggingface \
     HUGGINGFACE_HUB_CACHE=/home/developer/data/models/huggingface \
     HF_HOME=/home/developer/data/models/huggingface
-
-RUN sudo chmod -R 777 /dev
-
-RUN sudo usermod -a -G dialout developer \
- && sudo usermod -a -G tty developer \
- && sudo usermod -a -G video developer \
- && sudo usermod -a -G root developer \
- && sudo groupadd -f -r gpio \
- && sudo usermod -a -G gpio developer \
- && sudo groupadd -f -r i2c \
- && sudo usermod -a -G i2c developer

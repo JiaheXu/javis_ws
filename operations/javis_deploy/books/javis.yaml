@@ -50,6 +50,13 @@
 - llava:
   - +extend: javis_llava/docker
 
+- nanosam:
+  - +docker:javis_nanosam
+  # - +extend: javis_perception/catkin
+- nanosam:
+  - +extend: javis_nanosam/docker
+
+
 - autonomy:
   - +docker:javis_autonomy
   # - +extend: javis_autonomy/catkin
@@ -63,7 +70,11 @@
 - spot:
   - +extend: javis_spot/docker
 
-
+- test:
+  - +docker:javis_test
+  # - +extend: javis_perception/catkin
+- test:
+  - +extend: javis_test/docker
 
 
 - docker:
