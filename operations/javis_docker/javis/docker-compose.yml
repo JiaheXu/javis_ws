@@ -19,6 +19,8 @@ services:
     container_name: javis_common
     environment:
       - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_common/setup.bash
+      - COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_common
+      - COLCON_HOME=/home/developer/javis_ws/src/javis_common
     volumes:
       - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
       - /tmp/argus_socket:/tmp/argus_socket
@@ -48,6 +50,8 @@ services:
     container_name: javis_autonomy
     environment:
       - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_autonomy/setup.bash
+      - COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_autonomy
+      - COLCON_HOME=/home/developer/javis_ws/src/javis_autonomy
 
   # ////////////////////////////////////////////////////////////////////////////
   # drivers service (motor drivers / imu / velodyne / etc...)
@@ -62,6 +66,9 @@ services:
     container_name: javis_drivers
     environment:
       - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_drivers/setup.bash
+      - COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_drivers
+      - COLCON_HOME=/home/developer/javis_ws/src/javis_drivers
+
     volumes:
       - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
       - /tmp/argus_socket:/tmp/argus_socket
@@ -90,6 +97,8 @@ services:
     container_name: javis_spot
     environment:
       - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_spot/setup.bash
+      - COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_spot
+      - COLCON_HOME=/home/developer/javis_ws/src/javis_spot
     volumes:
       - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
       - /tmp/argus_socket:/tmp/argus_socket
@@ -106,18 +115,20 @@ services:
     ipc: "host"
 
   # ////////////////////////////////////////////////////////////////////////////
-  # drivers service (motor drivers / imu / velodyne / etc...)
+  # triage
   # ////////////////////////////////////////////////////////////////////////////
-  javis_medical:
-    image: javis/${JAVIS_ARCH_T}.medical:${DOCKER_IMAGE_VERSION}
+  javis_triage:
+    image: javis/${JAVIS_ARCH_T}.triage:${DOCKER_IMAGE_VERSION}
     build:
       context: ${JAVIS_DOCKER_PATH}/javis/
-      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/medical.dockerfile
+      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/triage.dockerfile
     extends:
       service: base
-    container_name: javis_medical
+    container_name: javis_triage
     environment:
-      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_medical/setup.bash
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_triage/setup.bash
+      - COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_triage
+      - COLCON_HOME=/home/developer/javis_ws/src/javis_triage
     volumes:
       - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
       - /tmp/argus_socket:/tmp/argus_socket
@@ -149,7 +160,8 @@ services:
     #  nice: 40
     environment:
       - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_perception/setup.bash
-
+      - COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_perception
+      - COLCON_HOME=/home/developer/javis_ws/src/javis_perception
     volumes:
       - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
       - /tmp/argus_socket:/tmp/argus_socket
@@ -182,7 +194,8 @@ services:
     #  nice: 40
     environment:
       - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_llava/setup.bash
-
+      - COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_llava
+      - COLCON_HOME=/home/developer/javis_ws/src/javis_llava
     volumes:
       - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
       - /tmp/argus_socket:/tmp/argus_socket
@@ -214,7 +227,8 @@ services:
     #  nice: 40
     environment:
       - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_nanosam/setup.bash
-
+      - COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_nanosam
+      - COLCON_HOME=/home/developer/javis_ws/src/javis_nanosam
     volumes:
       - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
       - /tmp/argus_socket:/tmp/argus_socket
@@ -246,6 +260,7 @@ services:
     #  nice: 40
     environment:
       - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_test/setup.bash
+      - COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_test
     volumes:
       - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra
       - /usr/src/jetson_multimedia_api:/usr/src/jetson_multimedia_api

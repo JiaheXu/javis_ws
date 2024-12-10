@@ -334,3 +334,5 @@ RUN sudo apt-get clean \
 # # set image to run entrypoint script
 # ENTRYPOINT $entrypoint_container_path/docker-entrypoint.bash
 RUN sudo apt install -y libeigen3-dev libfmt-dev ros-humble-domain-bridge
+
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc

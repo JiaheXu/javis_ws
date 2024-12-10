@@ -26,11 +26,11 @@
 - common:
   - +extend: javis_common/docker
 
-- medical:
-  - +docker:javis_medical
-  # - +extend: javis_medical/catkin
-- medical:
-  - +extend: javis_medical/docker
+- triage:
+  - +docker:javis_triage
+  # - +extend: javis_triage/catkin
+- triage:
+  - +extend: javis_triage/docker
 
 - drivers:
   - +docker:javis_drivers
