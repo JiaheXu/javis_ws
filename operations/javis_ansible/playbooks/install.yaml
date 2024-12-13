@@ -12,7 +12,7 @@
 - include: misc/anydesk.yaml
 
 
-- include: misc/ros.yaml
+# - include: misc/ros.yaml
 - include: misc/docker.yaml
 - include: misc/docker_tools.yaml
 - include: misc/docker_nvidia.yaml

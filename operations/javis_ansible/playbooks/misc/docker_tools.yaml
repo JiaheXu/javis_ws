@@ -77,7 +77,7 @@
 
   - name: validate docker compose
     become: true
-    shell: docker compose version
+    shell: docker-compose version
     register: docker_compose_version_out
     when: install_docker_compose
 
