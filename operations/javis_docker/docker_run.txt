@@ -1,0 +1,130 @@
+docker run \
+    --privileged \
+    -e DISPLAY=${DISPLAY} \
+    -e QT_X11_NO_MITSHM=1 \
+    -e JAVIS_ROS_DISTRO=${JAVIS_ROS_DISTRO} \
+    -e DEPLOYER_TOP_PATH=/home/developer/javis_ws/operations//javis_deploy/deployer/ \
+    -e DEPLOYER_BIN=/home/developer/javis_ws/operations//javis_deploy/deployer/bin/ \
+    -e DEPLOYER_BOOKS_PATH=/home/developer/javis_ws/operations//javis_deploy/books/ \
+    -e JAVIS_PATH=/home/developer/javis_ws/ \
+    -e JAVIS_SRC_PATH=/home/developer/javis_ws/src/ \
+    -e ROS_MASTER_IP=$JAVIS_HOSTNAME \
+    -e ROS_HOSTNAME=$JAVIS_HOSTNAME \
+    -e JAVIS_USERID=$JAVIS_USERID \
+    -e JAVIS_GROUPID=$JAVIS_GROUPID \
+    -e JAVIS_SYSTEM_ID=$JAVIS_SYSTEM_ID \
+    -e JAVIS_SYSTEM_TYPE=$JAVIS_SYSTEM_TYPE \
+    -e JAVIS_SYSTEM_COMPONENT=$JAVIS_SYSTEM_COMPONENT \
+    -e JAVIS_SETUP_SUPPRESS_CHECKS=true \
+    -e ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_common/setup.bash \
+    -e COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_common \
+    -e COLCON_HOME=/home/developer/javis_ws/src/javis_common \
+    -v ${JAVIS_PATH}:/home/developer/javis_ws/ \
+    -v ~/.javis/auto/deploy.conf:/home/developer/.javis/auto/deploy.conf \
+    -v ${JAVIS_LOGGING_DIR}:/logging \
+    -v /var/log/syslog:/syslog \
+    -v /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra \
+    -v /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon \
+    -v /tmp/argus_socket:/tmp/argus_socket \
+    -v /tmp:/tmp \
+    --device /dev/i2c-8:/dev/i2c-8 \
+    --device /dev/video0:/dev/video0 \
+    --device /dev/video1:/dev/video1 \
+    --device /dev/video2:/dev/video2 \
+    --device /dev/video3:/dev/video3 \
+    --device /dev/video4:/dev/video4 \
+    --device /dev/video5:/dev/video5 \
+    --device /dev/video6:/dev/video6 \
+    --runtime nvidia \
+    --net=host --ipc=host --pid=host \
+    --name javis_common -it javis/arm.ros.humble:release.v3.0
+
+colcon build --symlink-install --build-base /home/developer/javis_ws/build/javis_common --install-base /home/developer/javis_ws/install/javis_common
+
+docker run \
+    --privileged \
+    -e DISPLAY=${DISPLAY} \
+    -e QT_X11_NO_MITSHM=1 \
+    -e JAVIS_ROS_DISTRO=${JAVIS_ROS_DISTRO} \
+    -e DEPLOYER_TOP_PATH=/home/developer/javis_ws/operations//javis_deploy/deployer/ \
+    -e DEPLOYER_BIN=/home/developer/javis_ws/operations//javis_deploy/deployer/bin/ \
+    -e DEPLOYER_BOOKS_PATH=/home/developer/javis_ws/operations//javis_deploy/books/ \
+    -e JAVIS_PATH=/home/developer/javis_ws/ \
+    -e JAVIS_SRC_PATH=/home/developer/javis_ws/src/ \
+    -e ROS_MASTER_IP=$JAVIS_HOSTNAME \
+    -e ROS_HOSTNAME=$JAVIS_HOSTNAME \
+    -e JAVIS_USERID=$JAVIS_USERID \
+    -e JAVIS_GROUPID=$JAVIS_GROUPID \
+    -e JAVIS_SYSTEM_ID=$JAVIS_SYSTEM_ID \
+    -e JAVIS_SYSTEM_TYPE=$JAVIS_SYSTEM_TYPE \
+    -e JAVIS_SYSTEM_COMPONENT=$JAVIS_SYSTEM_COMPONENT \
+    -e JAVIS_SETUP_SUPPRESS_CHECKS=true \
+    -e ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_spot/setup.bash \
+    -e COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_spot \
+    -e COLCON_HOME=/home/developer/javis_ws/src/javis_spot \
+    -v ${JAVIS_PATH}:/home/developer/javis_ws/ \
+    -v ~/.javis/auto/deploy.conf:/home/developer/.javis/auto/deploy.conf \
+    -v ${JAVIS_LOGGING_DIR}:/logging \
+    -v /var/log/syslog:/syslog \
+    -v /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra \
+    -v /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon \
+    -v /tmp/argus_socket:/tmp/argus_socket \
+    -v /tmp:/tmp \
+    --device /dev/i2c-8:/dev/i2c-8 \
+    --device /dev/video0:/dev/video0 \
+    --device /dev/video1:/dev/video1 \
+    --device /dev/video2:/dev/video2 \
+    --device /dev/video3:/dev/video3 \
+    --device /dev/video4:/dev/video4 \
+    --device /dev/video5:/dev/video5 \
+    --device /dev/video6:/dev/video6 \
+    --runtime nvidia \
+    --net=host --ipc=host --pid=host \
+    --name javis_spot -it javis/arm.spot:release.v3.0
+
+colcon build --symlink-install --build-base /home/developer/javis_ws/build/javis_spot --install-base /home/developer/javis_ws/install/javis_spot
+    
+
+docker run \
+    --privileged \
+    -e DISPLAY=${DISPLAY} \
+    -e QT_X11_NO_MITSHM=1 \
+    -e JAVIS_ROS_DISTRO=${JAVIS_ROS_DISTRO} \
+    -e DEPLOYER_TOP_PATH=/home/developer/javis_ws/operations//javis_deploy/deployer/ \
+    -e DEPLOYER_BIN=/home/developer/javis_ws/operations//javis_deploy/deployer/bin/ \
+    -e DEPLOYER_BOOKS_PATH=/home/developer/javis_ws/operations//javis_deploy/books/ \
+    -e JAVIS_PATH=/home/developer/javis_ws/ \
+    -e JAVIS_SRC_PATH=/home/developer/javis_ws/src/ \
+    -e ROS_MASTER_IP=$JAVIS_HOSTNAME \
+    -e ROS_HOSTNAME=$JAVIS_HOSTNAME \
+    -e JAVIS_USERID=$JAVIS_USERID \
+    -e JAVIS_GROUPID=$JAVIS_GROUPID \
+    -e JAVIS_SYSTEM_ID=$JAVIS_SYSTEM_ID \
+    -e JAVIS_SYSTEM_TYPE=$JAVIS_SYSTEM_TYPE \
+    -e JAVIS_SYSTEM_COMPONENT=$JAVIS_SYSTEM_COMPONENT \
+    -e JAVIS_SETUP_SUPPRESS_CHECKS=true \
+    -e ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_drivers/setup.bash \
+    -e COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_drivers \
+    -e COLCON_HOME=/home/developer/javis_ws/src/javis_drivers \
+    -v ${JAVIS_PATH}:/home/developer/javis_ws/ \
+    -v ~/.javis/auto/deploy.conf:/home/developer/.javis/auto/deploy.conf \
+    -v ${JAVIS_LOGGING_DIR}:/logging \
+    -v /var/log/syslog:/syslog \
+    -v /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra \
+    -v /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon \
+    -v /tmp/argus_socket:/tmp/argus_socket \
+    -v /tmp:/tmp \
+    --device /dev/i2c-8:/dev/i2c-8 \
+    --device /dev/video0:/dev/video0 \
+    --device /dev/video1:/dev/video1 \
+    --device /dev/video2:/dev/video2 \
+    --device /dev/video3:/dev/video3 \
+    --device /dev/video4:/dev/video4 \
+    --device /dev/video5:/dev/video5 \
+    --device /dev/video6:/dev/video6 \
+    --runtime nvidia \
+    --net=host --ipc=host --pid=host \
+    --name javis_drivers -it javis/arm.drivers:release.v3.0
+
+
+
