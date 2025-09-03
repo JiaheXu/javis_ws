@@ -41,7 +41,7 @@ RUN pip3 install --force-reinstall -v "setuptools==59.6.0"
 # ARG ARCH=$CPU_ARCH
 # CMD if [ "$ARCH_T" = "x86"] ; then ARG ARCH="amd64"; else echo ARG ARCH="arm64" ; fi
 
-ENV ARCH="arm64"
+ENV ARCH="amd64"
 ARG SDK_VERSION="4.1.0"
 ARG MSG_VERSION="${SDK_VERSION}-4"
 
@@ -92,6 +92,18 @@ RUN sudo apt install -y ros-$ROS_DISTRO-joint-state-publisher-gui ros-$ROS_DISTR
 RUN wget -q -O /home/developer/protoc-29.0-rc-3-linux-aarch_64.zip https://github.com/protocolbuffers/protobuf/releases/download/v29.0-rc3/protoc-29.0-rc-3-linux-aarch_64.zip
 
 RUN sudo rm -rf /usr/local/bin/protoc /usr/local/include/google /usr/local/lib/libproto*
+
+RUN mkdir /home/developer/thirdparty-software
+RUN pip3 install protobuf==3.20.1
+
+RUN sudo apt install libsdformat-dev ros-humble-urdfdom-headers ros-humble-eigenpy ros-humble-hpp-fcl -y
+#RUN source /opt/ros/humble/setup.bash
+
+RUN cd ~/thirdparty-software \
+ && git clone https://github.com/strapsai/pinocchio \
+ && cd pinocchio \
+ && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+ && make -j8 && sudo make install
 
 RUN unzip protoc-29.0-rc-3-linux-aarch_64.zip -d /home/developer/.local
 RUN echo "export PATH=$PATH:$HOME/.local/bin" >> ~/.bashrc 

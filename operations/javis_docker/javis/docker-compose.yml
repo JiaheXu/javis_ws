@@ -245,6 +245,40 @@ services:
     ipc: "host"
 
   # ////////////////////////////////////////////////////////////////////////////
+  # whisper
+  # ////////////////////////////////////////////////////////////////////////////
+  javis_whisper:
+    image: javis/${JAVIS_ARCH_T}.whisper:${DOCKER_IMAGE_VERSION}
+    build:
+      dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/whisper.dockerfile
+      context: ${JAVIS_DOCKER_PATH}/javis/
+    extends:
+      service: base
+    container_name: javis_whisper
+    #privileged: true
+    #ulimits:
+    #  nice: 40
+    environment:
+      - ROS_SOURCED_WORKSPACE=/home/developer/javis_ws/install/javis_whisper/setup.bash
+      - COLCON_LOG_PATH=/home/developer/javis_ws/log/javis_whisper
+      - COLCON_HOME=/home/developer/javis_ws/src/javis_whisper
+    volumes:
+      - /usr/sbin/nvargus-daemon:/usr/sbin/nvargus-daemon
+      - /tmp/argus_socket:/tmp/argus_socket
+      - /tmp:/tmp
+    devices:
+      - /dev/i2c-8:/dev/i2c-8
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
+      - /dev/video3:/dev/video3
+      - /dev/video4:/dev/video4
+      - /dev/video5:/dev/video5
+      - /dev/video6:/dev/video6
+    ipc: "host"
+
+
+  # ////////////////////////////////////////////////////////////////////////////
   # test
   # ////////////////////////////////////////////////////////////////////////////
   javis_test:

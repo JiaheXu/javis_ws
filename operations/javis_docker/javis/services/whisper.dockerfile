@@ -2,17 +2,23 @@
 # javis common, ros melodic dockerfile -- version: 0.1
 # //////////////////////////////////////////////////////////////////////////////
 # ARG BASE_DOCKER_IMAGE
-# Ubuntu 18.04 with nvidia-docker2 beta opengl support
-FROM nvcr.io/nvidia/l4t-ml:r36.2.0-py3
-
-#for bst
-# FROM nvidia/opengl:1.2-glvnd-devel-ubuntu22.04 
 
 
-# //////////////////////////////////////////////////////////////////////////////
-# general tools install
+ARG JAVIS_ROS_DISTRO=$JAVIS_ROS_DISTRO
+ARG ARCH_T=$ARCH_T
+ARG DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION
+FROM dustynv/whisper_trt:r36.3.0
+# for ros2
+RUN apt update
 
-ARG DEBIAN_FRONTEND=noninteractive
+# RUN apt install software-properties-common -y \
+#  && apt update && apt install curl -y \
+#  && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
+#  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+# Add a user with the same user_id as the user outside the container
+# Requires a docker build argument `user_id`
+
 
 RUN apt-get update --no-install-recommends \ 
     && apt-get install -y apt-utils 
@@ -40,32 +46,16 @@ RUN apt-get install -y \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-# for zed camera, need root access
-# RUN apt-get update || true 
-# RUN apt-get install --no-install-recommends lsb-release wget less udev zstd sudo apt-transport-https build-essential cmake -y
-
-# # need to comment out for basestation
-# # RUN    wget -q --no-check-certificate -O ZED_SDK_Linux.run https://download.stereolabs.com/zedsdk/4.0/l4t35.3/jetsons 
-# RUN    wget -q --no-check-certificate -O ZED_SDK_Linux.run https://download.stereolabs.com/zedsdk/4.1/l4t36.2/jetsons 
-# RUN chmod +x ZED_SDK_Linux.run ; ./ZED_SDK_Linux.run silent skip_tools skip_drivers && \
-#     rm -rf /usr/local/zed/resources/* \
-#     rm -rf ZED_SDK_Linux.run && \
-#     rm -rf /var/lib/apt/lists/*
-# RUN ln -sf /usr/lib/aarch64-linux-gnu/tegra/libv4l2.so.0 /usr/lib/aarch64-linux-gnu/libv4l2.so
-
-
-
-# Add a user with the same user_id as the user outside the container
-# Requires a docker build argument `user_id`
 ARG user_id=$user_id
 ENV USERNAME developer
 RUN useradd -U --uid ${user_id} -ms /bin/bash $USERNAME \
  && echo "$USERNAME:$USERNAME" | chpasswd \
  && adduser $USERNAME sudo \
+#  && mkdir /etc/sudoers.d/ \
+#  && touch /etc/sudoers.d/$USERNAME \
  && echo "$USERNAME ALL=NOPASSWD: ALL" >> /etc/sudoers.d/$USERNAME
-
-# Commands below run as the developer user
 USER $USERNAME
+
 
 # When running a container start in the developer's home folder
 WORKDIR /home/$USERNAME
@@ -78,21 +68,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
  && sudo ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime \
  && sudo dpkg-reconfigure --frontend noninteractive tzdata \
  && sudo apt-get clean 
-
-
-
-RUN mkdir ~/.javis
-
-RUN touch ~/.Xauthority
-
-RUN sudo usermod -a -G dialout developer \
- && sudo usermod -a -G tty developer \
- && sudo usermod -a -G video developer \
- && sudo usermod -a -G root developer \
- && sudo usermod -a -G audio developer \
- && sudo groupadd -f -r gpio \
- && sudo usermod -a -G gpio developer
-
 # for ros2
 RUN sudo apt update && sudo apt install locales \
  && sudo locale-gen en_US en_US.UTF-8 \
@@ -105,8 +80,6 @@ RUN sudo apt install software-properties-common \
  && sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
-RUN sudo chown -R developer:developer /usr/local
-# RUN sudo chown -R developer:developer /etc/
 
 RUN sudo apt update && sudo apt upgrade -y \
  && sudo apt install -y ros-humble-ros-base ros-dev-tools 
@@ -247,205 +220,17 @@ RUN sudo apt-get install -y --no-install-recommends \
     ros-humble-common-interfaces \
     ros-humble-camera-info-manager
 
-RUN sudo apt-get update --no-install-recommends \
- && sudo apt-get install -y \
-  gstreamer1.0-plugins-good \
-  gstreamer1.0-plugins-bad \
-  gstreamer1.0-libav\
-  python3-pip
+RUN sudo apt install portaudio19-dev python3-pyaudio -y
+RUN pip3 install socketio uvicorn cv_bridge opencv-python starlette sounddevice
 
+RUN sudo usermod -a -G dialout developer \
+ && sudo usermod -a -G tty developer \
+ && sudo usermod -a -G video developer \
+ && sudo usermod -a -G root developer \
+ && sudo usermod -a -G audio developer \
+ && sudo groupadd -f -r gpio \
+ && sudo usermod -a -G gpio developer
 
-
-RUN sudo apt install python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential -y
-# RUN sudo apt install python3-rosdep
-RUN sudo -E rosdep init
-RUN rosdep update
-# RUN sudo rosdep init
-# RUN rosdep update
-
-#for spot
-RUN sudo -H pip3 install \
-    aiortc==1.5.0 \
-    bosdyn-api==4.0.0 \
-    bosdyn-choreography-client==4.0.0 \
-    bosdyn-client==4.0.0 \
-    bosdyn-core==4.0.0 \
-    bosdyn-mission==4.0.0 \
-    grpcio==1.59.3 \
-    image==1.5.33 \
-    inflection==0.5.1 \
-    protobuf==3.19.4 \
-    pytest==7.3.1 \
-    pytest-cov==4.1.0 \
-    pytest-xdist==3.5.0 \
-    setuptools==59.6.0
-
-ARG ARCH="arm64"
-ARG SDK_VERSION="4.0.0"
-ARG MSG_VERSION="${SDK_VERSION}-2"
-ARG ROS_DISTRO=humble
-# Install ROS dependencies
-# TODO(jschornak-bdai): use rosdep to install these packages by parsing dependencies listed in package.xml
-RUN sudo apt update
-RUN sudo apt install -y ros-humble-joint-state-publisher-gui ros-$ROS_DISTRO-xacro ros-$ROS_DISTRO-tl-expected
-# ros-$ROS_DISTRO-depth-image-proc
-# Install the dist-utils
-RUN sudo apt-get install -y python3-distutils
-RUN sudo apt-get install -y python3-apt
-RUN sudo pip3 install --force-reinstall -v "setuptools==59.6.0"
-# Install bosdyn_msgs - automatic conversions of BD protobufs to ROS messages
-RUN wget -q -O /tmp/ros-humble-bosdyn_msgs_${MSG_VERSION}-jammy_${ARCH}.run https://github.com/bdaiinstitute/bosdyn_msgs/releases/download/${MSG_VERSION}/ros-humble-bosdyn_msgs_${MSG_VERSION}-jammy_${ARCH}.run
-RUN sudo chmod +x /tmp/ros-humble-bosdyn_msgs_${MSG_VERSION}-jammy_${ARCH}.run
-
-# has interactive question , need to solve in the future
-# RUN sudo /tmp/ros-humble-bosdyn_msgs_${MSG_VERSION}-jammy_${ARCH}.run
-RUN yes | sudo /tmp/ros-humble-bosdyn_msgs_${MSG_VERSION}-jammy_${ARCH}.run  --nox11
-RUN rm /tmp/ros-humble-bosdyn_msgs_${MSG_VERSION}-jammy_${ARCH}.run
-
-# Install spot-cpp-sdk
-RUN wget -q -O /tmp/spot-cpp-sdk_${SDK_VERSION}_${ARCH}.deb https://github.com/bdaiinstitute/spot-cpp-sdk/releases/download/${SDK_VERSION}/spot-cpp-sdk_${SDK_VERSION}_${ARCH}.deb
-RUN sudo dpkg -i /tmp/spot-cpp-sdk_${SDK_VERSION}_${ARCH}.deb
-RUN rm /tmp/spot-cpp-sdk_${SDK_VERSION}_${ARCH}.deb
-
-RUN sudo apt install python3-colcon-common-extensions ros-humble-rviz2 ros-humble-turtle-tf2-py ros-humble-tf2-ros ros-humble-tf2-tools ros-humble-turtlesim -y
-
-RUN sudo apt install ros-humble-nmea-msgs ros-humble-geographic-msgs ros-humble-diagnostic-updater ros-humble-robot-localization libpcap-dev -y
-
-RUN python3 -m pip install --upgrade pip
-
-RUN sudo pip3 install setuptools==62.4
-
-
-RUN sudo apt-get update \
-    && sudo apt-get install -y --no-install-recommends \
-        libgoogle-glog-dev \
-        libgflags-dev \
-        libatlas-base-dev \
-        libsuitesparse-dev \
-        libparmetis-dev \
-    && sudo apt-get clean 
-
-RUN mkdir /home/developer/thirdparty-software
-
-RUN sudo apt install -y libeigen3-dev libfmt-dev ros-humble-domain-bridge
-
-# # Install Gtsam 
-# RUN cd ~/thirdparty-software\
-#  && git clone https://github.com/borglab/gtsam.git \
-# #  && git clone https://github.com/borglab/gtsam.git --branch 4.0.3\
-#  && cd gtsam \
-#  && mkdir build && cd build \
-# #  && cmake -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF ..\
-#  && cmake -DGTSAM_USE_QUATERNIONS=ON -DGTSAM_BUILD_PYTHON=ON -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF .. \
-#  && sudo make install -j8 \
-#  && cd ~ 
-#  #&& sudo rm -rf ~/thirdparty-software/gtsam
-
-# RUN cd ~/thirdparty-software \
-#  && git clone http://github.com/strasdat/Sophus.git \
-#  && cd Sophus && git checkout 97e7161 \
-#  && mkdir build && cd build && cmake .. -DBUILD_TESTS=OFF \
-#  && make -j8 && sudo make install
-
-
-# RUN cd ~/thirdparty-software \
-#  && git clone https://github.com/ceres-solver/ceres-solver.git \
-#  && cd ceres-solver && git checkout 941ea13 \
-#  && mkdir build && cd build \
-#  && cmake .. \
-#  && sudo make install -j8 \
-#  && cd ~ 
-
-
-RUN python3 -m pip install --upgrade pip \
- && pip3 install --no-cache-dir ipdb ipython
-
-# RUN pip3 install numpy==1.26.1 
-
-# 2D Body pose detection.
-# Mayank and Aniket.
-# We should try to relax the versions a little bit.
-RUN sudo pip3 install --no-cache-dir \
-    nvitop==1.3.2 \
-    mmdet==2.24.1 \
-    mmpose==0.25.1 \
-    openmim==0.1.5 \
-    timm==0.5.4 \
-    gradio==4.16.0 \
-    munkres \
-    ffmpeg==1.4 \
-    Pillow \
-    Jetson.GPIO
-
-# mmpose==0.25.1 \ changing opencv???
-
-
-
-# didn't find compatable ones
-# RUN pip3 install mmcv-full==1.5.0 
-
-# Heart rate detection.
-# James.
-RUN pip3 install --no-cache-dir \
-    h5py \
-    facenet_pytorch==2.5.3
-
-# # Alertness detectin.
-# # Krisha.
-# RUN pip3 install --no-cache-dir \
-#     sentencepiece~=0.1.98 \
-#     "transformers>=4.35.2,<5.0.0" \
-#     gguf>=0.1.0
-
-# # Bayes Tree.
-# # Kyle.
-RUN sudo pip3 install --no-cache-dir \
-    pgmpy
-
-# RR and HR stuff from James
-# RUN sudo pip3 install protobuf==3.20.3 
-RUN sudo pip3 install segmentation-models-pytorch pytorch-lightning==1.5.3
-
-RUN mkdir -p /home/developer/.cache/torch/hub/checkpoints
-RUN echo 'export TORCH_HOME=/home/developer/.cache/torch' >> ~/.bashrc
-
-
-RUN sudo apt install -y ros-humble-rosbag2-storage-mcap ros-humble-can-msgs ros-humble-serial-driver
-RUN sudo apt install ros-humble-camera-info-manager
-
-RUN sudo apt install -y \
-  gir1.2-gst-plugins-bad-1.0 \
-  gir1.2-gst-plugins-base-1.0 \
-  gir1.2-gstreamer-1.0 \
-  gir1.2-gudev-1.0 \
-  gstreamer1.0-alsa \
-  gstreamer1.0-gtk3 \
-  gstreamer1.0-plugins-ugly \
-  gstreamer1.0-pulseaudio \
-  gstreamer1.0-qt5 \
-  gstreamer1.0-tools \
-  libgstreamer-plugins-base1.0-dev \
-  libgstreamer-plugins-good1.0-dev \
-  libgstreamer1.0-dev \
-  liba52-0.7.4 \
-  libcdio19 \
-  libdw-dev \
-  libelf-dev \
-  libgudev-1.0-dev \
-  libmpeg2-4 \
-  libopencore-amrnb0 \
-  libopencore-amrwb0 \
-  libopenexr-dev \
-  liborc-0.4-dev \
-  liborc-0.4-dev-bin \
-  libqt5waylandclient5 \
-  libqt5x11extras5 \
-  libsidplay1v5 \
-  libunwind-dev \
-  libx11-xcb-dev
-
-RUN sudo pip3 install protobuf==3.20.1
-# these ones changes opencv version
-#   libgstreamer-plugins-bad1.0-dev \
-#   libgstreamer-opencv1.0-0 \
-#   opencv-data
+ENV TRANSFORMERS_CACHE=/home/developer/data/models/huggingface \
+    HUGGINGFACE_HUB_CACHE=/home/developer/data/models/huggingface \
+    HF_HOME=/home/developer/data/models/huggingface

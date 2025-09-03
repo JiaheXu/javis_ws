@@ -221,7 +221,12 @@ RUN sudo apt-get install -y --no-install-recommends \
     ros-humble-camera-info-manager
 
 
-RUN pip3 install cv_bridge opencv-python
+RUN pip3 install cv_bridge opencv-python pycocotools
+# python3 setup.py develop --user
+
+RUN sudo apt install libgl1-mesa-glx -y
+
+RUN sudo chown -R developer:developer /usr/local/
 
 ENV TRANSFORMERS_CACHE=/home/developer/data/models/huggingface \
     HUGGINGFACE_HUB_CACHE=/home/developer/data/models/huggingface \

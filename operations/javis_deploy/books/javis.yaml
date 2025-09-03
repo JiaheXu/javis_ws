@@ -16,6 +16,7 @@
 - JAVIS_SPOT_DIR=$JAVIS_SRC/javis_spot
 
 - JAVIS_AUTON_DIR=$JAVIS_SRC/javis_autonomy
+
 - JAVIS_BUILD_PROFILE=default
 
 # to add docker
@@ -63,6 +64,10 @@
 - autonomy:
   - +extend: javis_autonomy/docker
 
+- whisper:
+  - +docker:javis_whisper
+- whisper:
+  - +extend: javis_whisper/docker
 
 - spot:
   - +docker:javis_spot
