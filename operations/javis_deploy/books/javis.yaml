@@ -51,6 +51,12 @@
 - llava:
   - +extend: javis_llava/docker
 
+- llava:
+  - +docker:javis_llm
+  # - +extend: javis_perception/catkin
+- llava:
+  - +extend: javis_llm/docker
+
 - nanosam:
   - +docker:javis_nanosam
   # - +extend: javis_perception/catkin
