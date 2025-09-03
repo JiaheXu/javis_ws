@@ -75,16 +75,16 @@
   #   register: docker_version_out
   #   when: install_docker_compose and "x86" not in arch_type
 
-  - name: validate docker compose
-    become: true
-    shell: docker-compose version
-    register: docker_compose_version_out
-    when: install_docker_compose
+  # - name: validate docker compose
+  #   become: true
+  #   shell: docker-compose version
+  #   register: docker_compose_version_out
+  #   when: install_docker_compose
 
-  - name: output validate docker compose
-    debug:
-      msg: "Docker Compose Version: {{docker_compose_version_out.stdout}}"
-    when: install_docker_compose
+  # - name: output validate docker compose
+  #   debug:
+  #     msg: "Docker Compose Version: {{docker_compose_version_out.stdout}}"
+  #   when: install_docker_compose
 
   # //////////////////////////////////////////////////////////////////////////
   # Docker Machine

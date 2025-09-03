@@ -51,10 +51,10 @@
 - llava:
   - +extend: javis_llava/docker
 
-- llava:
+- llm:
   - +docker:javis_llm
   # - +extend: javis_perception/catkin
-- llava:
+- llm:
   - +extend: javis_llm/docker
 
 - nanosam:
