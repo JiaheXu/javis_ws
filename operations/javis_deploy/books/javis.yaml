@@ -51,6 +51,12 @@
 - llava:
   - +extend: javis_llava/docker
 
+- gemma:
+  - +docker:javis_gemma
+  # - +extend: javis_perception/catkin
+- gemma:
+  - +extend: javis_gemma/docker
+
 - llm:
   - +docker:javis_llm
   # - +extend: javis_perception/catkin

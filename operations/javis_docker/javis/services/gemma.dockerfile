@@ -7,7 +7,7 @@
 ARG JAVIS_ROS_DISTRO=$JAVIS_ROS_DISTRO
 ARG ARCH_T=$ARCH_T
 ARG DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION
-FROM dustynv/vllm:0.7.4-r36.4.0-cu128-24.04
+FROM dustynv/ollama:main-r36.4.0
 
 RUN apt update
 
@@ -46,9 +46,9 @@ RUN apt-get install -y \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-# ARG user_id=1001
+ARG user_id=$user_id
 ENV USERNAME developer
-RUN useradd -U --uid 1001 -ms /bin/bash $USERNAME \
+RUN useradd -U --uid ${user_id} -ms /bin/bash $USERNAME \
  && echo "$USERNAME:$USERNAME" | chpasswd \
  && adduser $USERNAME sudo \
 #  && mkdir /etc/sudoers.d/ \
@@ -73,7 +73,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 
 # RUN mkdir -p /home/developer/data/models/huggingface
 
-ENV TRANSFORMERS_HOME=/home/developer/model_data/models/huggingface \
+ENV TRANSFORMERS_CACHE=/home/developer/model_data/models/huggingface \
     HUGGINGFACE_HUB_CACHE=/home/developer/model_data/models/huggingface \
     HF_HOME=/home/developer/model_data/models/huggingface
 

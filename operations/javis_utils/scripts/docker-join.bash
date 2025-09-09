@@ -93,7 +93,7 @@ subtitle "  - Your catkin workspace should be automatically sourced. \n"
 subtitle "  - If not, check that you have build the workspace. "
 newline
 subtitle "Docker Networking: \n"
-subtitle "  - Robot containers use the roobot computer host's networking. \n"
+subtitle "  - Robot containers use the robot computer host's networking. \n"
 subtitle "  - You should be able to ping any of the IPs from your localhost (outside docker) or from any other container (inside docker). "
 newline
 subtitle "Directories: \n "

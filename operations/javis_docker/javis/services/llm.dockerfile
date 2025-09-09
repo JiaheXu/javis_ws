@@ -221,13 +221,13 @@ RUN sudo apt-get install -y --no-install-recommends \
     ros-humble-camera-info-manager
 
 
-RUN pip3 install cv_bridge opencv-python
+#RUN pip3 install cv_bridge opencv-python
 
-RUN mkdir -p /home/developer/data/models/huggingface
+# RUN mkdir -p /home/developer/data/models/huggingface
 
-ENV TRANSFORMERS_CACHE=/home/developer/data/models/huggingface \
-    HUGGINGFACE_HUB_CACHE=/home/developer/data/models/huggingface \
-    HF_HOME=/home/developer/data/models/huggingface
+ENV TRANSFORMERS_CACHE=/home/developer/model_data/models/huggingface \
+    HUGGINGFACE_HUB_CACHE=/home/developer/model_data/models/huggingface \
+    HF_HOME=/home/developer/model_data/models/huggingface
 
 RUN sudo chmod -R 777 /dev
 
@@ -239,3 +239,5 @@ RUN sudo usermod -a -G dialout developer \
  && sudo usermod -a -G gpio developer \
  && sudo groupadd -f -r i2c \
  && sudo usermod -a -G i2c developer
+
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
