@@ -1,0 +1,8 @@
+sudp apt install netplan.io dnsutils -y
+sudo cp ./01-netcfg.yaml /etc/netplan
+sudo cp ./resolv.conf /etc/
+
+
+
+sudo netplan apply
+dig api.deepseek.com

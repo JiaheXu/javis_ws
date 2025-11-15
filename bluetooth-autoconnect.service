@@ -1,0 +1,13 @@
+[Unit]
+Description=Auto-connect trusted Bluetooth devices (e.g., Xbox)
+After=bluetooth.target
+Requires=bluetooth.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /home/jiahe/auto_connect_bt.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

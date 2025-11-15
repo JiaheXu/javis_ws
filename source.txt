@@ -1,0 +1,8 @@
+-i https://pypi.tuna.tsinghua.edu.cn/simple
+
+sudo apt install dkms git build-essential -y
+git clone https://github.com/medusalix/xone.git
+cd xone
+sudo ./install.sh
+
+sudo ip route replace default via 192.168.1.1 dev eth0

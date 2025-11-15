@@ -1,0 +1,77 @@
+Go to the NVIDIA Jetson L4T release page (for your JetPack version):
+
+https://developer.nvidia.com/embedded/linux-tegra
+
+Look under “Driver Package (BSP) and Sources”, download public_sources.tbz2, then extract:
+
+tar -xjf public_sources.tbz2
+cd Linux_for_Tegra/source/public/kernel/kernel-5.15
+
+
+
+1. Go to kernel source root
+cd ~/linux_src/Linux_for_Tegra/source/kernel/kernel-jammy-src
+
+2. Get the current running kernel config
+zcat /proc/config.gz > .config
+
+3. Sync config & prepare headers
+make olddefconfig
+make modules_prepare
+
+
+This generates include/generated/asm-offsets.h and other headers.
+
+4. Export ARCH + CROSS_COMPILE (important for Jetson!)
+
+On Jetson, build native:
+
+export ARCH=arm64
+export CROSS_COMPILE=aarch64-linux-gnu-
+
+5. Build only the USB net drivers
+make M=drivers/net/usb modules -j$(nproc)
+
+
+Now it should succeed and produce:
+
+drivers/net/usb/usbnet.ko
+drivers/net/usb/cdc_ether.ko
+drivers/net/usb/rndis_host.ko
+
+6. Install modules
+export KERNEL_RELEASE=$(uname -r)
+sudo cp drivers/net/usb/*.ko /lib/modules/$KERNEL_RELEASE/kernel/drivers/net/usb/
+sudo depmod -a
+
+
+Then load:
+
+sudo modprobe rndis_host
+
+
+
+✅ Post-install checklist
+1. Confirm the module is loaded
+lsmod | grep rndis
+
+
+Expected output (like on your working machine):
+
+rndis_host   16384  0
+cdc_ether    20480  1 rndis_host
+usbnet       40960  2 rndis_host,cdc_ether
+
+
+Next Steps: Bring up the interface
+1. Check interfaces
+ip link show
+
+
+You should now see eth1 (might also be named enxAC0033AA9633).
+
+2. Assign IP automatically
+
+If your dongle provides DHCP:
+
+sudo dhclient eth1

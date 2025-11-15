@@ -111,44 +111,13 @@ hosts:
   dev.dev:
     launch:
       session_name: pt_start
-      default: autonomy
+      default: pino
       launches:
-        autonomy: tmux/pt-orin.start.yaml
-        super_odom: tmux/superodom.start.yaml
-        mso: tmux/mso.start.yaml
-        tare: tmux/tare.yaml
-        collect_data: tmux/collect_data.yaml
-        super_odom_mso: tmux/superodom.mso.start.yaml        
-        ros2: tmux/pt-orin.ros2.yaml  
+        pino: tmux/pino.yaml
 
-        mt001: tmux/mt001_rc.yaml
-        mt002: tmux/mt002.yaml
-        mt003: tmux/mt003.yaml
-        mt004: tmux/mt004.yaml
-      stop: tmux/pt-orin.stop.yaml
-    logging:
-      default: payload_base
-      logs: [ "payload_base", "super_odom", "payload_base", "payload_base","collect_data" ]
-      
   rc.orin:
     launch:
       session_name: pt_start
-      default: autonomy
+      default: pino
       launches:
-        autonomy: tmux/pt-orin.start.yaml
-        super_odom: tmux/superodom.start.yaml
-        mso: tmux/mso.start.yaml
-        tare: tmux/tare.yaml
-        collect_data: tmux/collect_data.yaml
-        super_odom_mso: tmux/superodom.mso.start.yaml        
-        ros2: tmux/pt-orin.ros2.yaml  
-
-        mt001: tmux/mt001.yaml
-        mt002: tmux/mt002.yaml
-        mt003: tmux/mt003.yaml
-        mt004: tmux/mt004.yaml
-      stop: tmux/pt-orin.stop.yaml
-    logging:
-      default: payload_base
-      logs: [ "payload_base", "super_odom", "payload_base", "payload_base","collect_data" ]
-
+        pino: tmux/pino.yaml

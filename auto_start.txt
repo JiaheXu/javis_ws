@@ -1,0 +1,32 @@
+/etc/systemd/system/mycmd.service:
+
+[Unit]
+Description=Run Javis on startup
+After=network.target multi-user.target
+
+[Service]
+User=jiahe
+WorkingDirectory=/home/jiahe
+ExecStart=/usr/bin/bash -i -l -c "tmuxp load -d /home/jiahe/javis_ws/operations/javis_deploy/tmux/pino.yaml"
+Type=forking
+Restart=always
+Environment=HOME=/home/jiahe
+Environment=USER=jiahe
+
+[Install]
+WantedBy=default.target
+
+
+
+sudo systemctl daemon-reload
+sudo systemctl enable mycmd.service
+sudo systemctl restart mycmd.service
+
+
+
+
+
+sudo nano /etc/systemd/system/bluetooth-autoconnect.service
+sudo systemctl daemon-reload
+sudo systemctl enable bluetooth-autoconnect.service
+sudo systemctl start bluetooth-autoconnect.service
