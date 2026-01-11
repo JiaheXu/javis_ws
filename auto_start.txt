@@ -2,19 +2,23 @@
 
 [Unit]
 Description=Run Javis on startup
-After=network.target multi-user.target
+After=network.target
 
 [Service]
-User=jiahe
-WorkingDirectory=/home/jiahe
-ExecStart=/usr/bin/bash -i -l -c "tmuxp load -d /home/jiahe/javis_ws/operations/javis_deploy/tmux/pino.yaml"
-Type=forking
-Restart=always
-Environment=HOME=/home/jiahe
-Environment=USER=jiahe
+Type=oneshot
+User=developer
+WorkingDirectory=/home/developer
+
+Environment=HOME=/home/developer
+Environment=USER=developer
+Environment=PATH=/home/developer/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+ExecStart=/usr/bin/bash -c "tmuxp load -d /home/developer/javis_ws/operations/javis_deploy/tmux/pino.yaml"
+
+RemainAfterExit=yes
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
 
 
 

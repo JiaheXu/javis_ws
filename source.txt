@@ -6,3 +6,16 @@ cd xone
 sudo ./install.sh
 
 sudo ip route replace default via 192.168.1.1 dev eth0
+
+
+python3 -m pip install --user openwakeword==0.5.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+
+pip3 install openwakeword==0.5.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+pip3 install numpy==1.24.4 scipy==1.8.0 opencc -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+
+docker run --runtime nvidia -it -v ${HOME}/model_data:/home/developer/model_data -v ${HOME}/javis_ws:/home/developer/javis_ws --network=host dustynv/kokoro-tts:fastapi-r36.4.0
+
+rosdep install -y --from-paths . --ignore-src --rosdistro ${ROS_DISTRO}

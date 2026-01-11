@@ -7,8 +7,7 @@
 ARG JAVIS_ROS_DISTRO=$JAVIS_ROS_DISTRO
 ARG ARCH_T=$ARCH_T
 ARG DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION
-#FROM dustynv/whisper_trt:r36.3.0
-From dustynv/wyoming-whisper:2.3.0-r36.4.0
+FROM dustynv/whisper_trt:r36.3.0
 # for ros2
 RUN apt update
 
@@ -224,13 +223,24 @@ RUN sudo apt-get install -y --no-install-recommends \
 RUN sudo apt install portaudio19-dev python3-pyaudio -y
 RUN pip3 install socketio uvicorn cv_bridge opencv-python starlette sounddevice openwakeword==0.5.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
 
+RUN sudo apt install -y ffmpeg libavdevice-dev libavfilter-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev portaudio19-dev alsa-utils libpcap0.8-dev ros-humble-pcl-ros ros-humble-diagnostic-updater
+
+# python3 -m pip install --user --upgrade pip setuptools==67.2.0 wheel -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+RUN sudo groupadd -f dialout \
+ && sudo groupadd -f tty \
+ && sudo groupadd -f video \
+ && sudo groupadd -f audio \
+ && sudo groupadd -f i2c \
+ && sudo groupadd -f -r gpio \
+ && sudo usermod -aG dialout,tty,video,audio,i2c,gpio developer
+
 RUN sudo usermod -a -G dialout developer \
  && sudo usermod -a -G tty developer \
  && sudo usermod -a -G video developer \
  && sudo usermod -a -G root developer \
  && sudo usermod -a -G audio developer \
  && sudo usermod -aG i2c developer \
- && sudo groupadd -f -r gpio \
  && sudo usermod -a -G gpio developer
 
 ENV TRANSFORMERS_CACHE=/home/developer/model_data/models/huggingface \
