@@ -12,7 +12,7 @@
       shell: lsb_release -c -s
       register: lsb_release_codename
 
-    - name: Register Ubuntu Codename Varibale
+    - name: Register Ubuntu Codename Variable
       set_fact:
         ubuntu_release: "{{ lsb_release_codename.stdout }}"
 
@@ -20,7 +20,7 @@
       shell: uname -m
       register: uname_m
 
-    - name: Register Ubuntu Codename Varibale
+    - name: Register Architecture Variable
       set_fact:
         arch_type: "{{ uname_m.stdout }}"
 
@@ -80,6 +80,26 @@
       set_fact:
         jetson_orin: false
       when: tegrastats_output.rc != 0
+
+    - name: Check NV Tegra release file on aarch64
+      stat:
+        path: /etc/nv_tegra_release
+      register: nv_tegra_release_stat
+      when: arch_type == "aarch64"
+
+    - name: Report detected platform facts
+      debug:
+        msg: "{{ username }}@{{ hostname }}: ubuntu={{ ubuntu_release }}, arch={{ arch_type }}, nvidia_smi_rc={{ nvidia_smi_output.rc }}, tegrastats_rc={{ tegrastats_output.rc }}, jetson_orin={{ jetson_orin }}"
+
+    - name: Fail when aarch64 host is not a recognized Jetson Orin image
+      fail:
+        msg: "Detected aarch64 but tegrastats is not available. Fresh Orin installs must use the supported Jetson image so platform detection, Docker runtime assumptions, and NVIDIA device mounts match this workspace."
+      when: arch_type == "aarch64" and not jetson_orin
+
+    - name: Fail when Jetson release information is missing
+      fail:
+        msg: "Detected Jetson Orin, but /etc/nv_tegra_release is missing or unreadable. Use the supported Jetson image before running the JAVIS installer."
+      when: jetson_orin and not nv_tegra_release_stat.stat.exists
 
     - name: Set javis_arch_type to unknown
       set_fact:

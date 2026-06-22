@@ -8,6 +8,76 @@
 
   tasks:
     # ////////////////////////////////////////////////////////////////////////
+    # Workspace sanity checks
+    # ////////////////////////////////////////////////////////////////////////
+    - name: Resolve JAVIS workspace path
+      set_fact:
+        preflight_javis_path: "{{ javis_path | default(lookup('env', 'JAVIS_PATH'), true) }}"
+
+    - name: Check JAVIS workspace path is known
+      fail:
+        msg: "JAVIS workspace path is not set. Source ./javis-setup.bash before running javis install, or pass --ws-path <path>."
+      when: preflight_javis_path == ""
+
+    - name: Check JAVIS workspace path exists
+      stat:
+        path: "{{ preflight_javis_path }}"
+      register: preflight_javis_path_stat
+
+    - name: Fail when JAVIS workspace path is missing
+      fail:
+        msg: "JAVIS workspace path does not exist: {{ preflight_javis_path }}"
+      when: not preflight_javis_path_stat.stat.exists
+
+    - name: Check required operations paths
+      stat:
+        path: "{{ preflight_javis_path }}/{{ item }}"
+      register: preflight_required_path_stats
+      with_items:
+        - operations/javis_ansible
+        - operations/javis_deploy
+        - operations/javis_docker
+        - operations/javis_utils
+        - operations/javis_utils/scripts/javis-install
+        - operations/javis_deploy/automate/javis
+        - operations/javis_docker/docker-compose.yml
+        - operations/javis_docker/javis/docker-compose.yml
+
+    - name: Fail when required operations paths are missing
+      fail:
+        msg: "Required JAVIS path is missing: {{ preflight_javis_path }}/{{ item.item }}. Clone or update the operations submodules before running the installer."
+      when: not item.stat.exists
+      with_items: "{{ preflight_required_path_stats.results }}"
+
+    - name: Check required bootstrap commands
+      shell: "command -v {{ item }}"
+      register: preflight_required_command_checks
+      changed_when: false
+      failed_when: false
+      with_items:
+        - git
+        - ssh
+        - python3
+        - pip3
+
+    - name: Fail when required bootstrap commands are missing
+      fail:
+        msg: "Required command is missing: {{ item.item }}. Install the prerequisite package before running javis install."
+      when: item.rc != 0
+      with_items: "{{ preflight_required_command_checks.results }}"
+
+    - name: Check docker command
+      shell: "command -v docker"
+      register: preflight_docker_command_check
+      changed_when: false
+      failed_when: false
+
+    - name: Report docker command status
+      debug:
+        msg: "Docker command is not available yet. The installer may install Docker on x86; Jetson Orin images should provide a usable Docker install before launch verification."
+      when: preflight_docker_command_check.rc != 0
+
+    # ////////////////////////////////////////////////////////////////////////
     # Install Base Packages
     # ////////////////////////////////////////////////////////////////////////
     - name: Check that sudo password is correct.
@@ -29,4 +99,4 @@
       rescue:
         - name: Error message
           fail:
-            msg: apt update failed, trying running command manually and fix errors
+            msg: "apt update failed. Run sudo apt update manually and fix the reported package errors before running javis install again."

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-eval "$(cat $__dir/../../javis_utils/scripts/header.sh)"
-eval "$(cat $__dir/../../javis_utils/scripts/formatters.sh)"
+eval "$(cat "$__dir/../../javis_utils/scripts/header.sh")"
+eval "$(cat "$__dir/../../javis_utils/scripts/formatters.sh")"
 
 
 if chk_flag --help $@ || chk_flag help $@ || chk_flag -h $@ || chk_flag -help $@; then
@@ -178,12 +178,12 @@ echo
 
 warning "Please enter the password for the target system(s)"
 function run_book() {
-    cd $__dir/../../javis_ansible
+    cd "$__dir/../../javis_ansible"
     export ANSIBLE_HOST_KEY_CHECKING=False
     ansible-playbook $KARGS $RUSERNAME $ORUSERNAME $PASSARGS -i $system_names playbooks/$1.yaml --extra-vars="$addition_args" --extra-vars="$2"
     code=$?
     if [ $code != 0 ]; then
-        cd $__call_dir
+        cd "$__call_dir"
         echo
         echo
         error "Installation did not complete successfully!"
@@ -202,15 +202,15 @@ if chk_flag --enable-hit $@ ; then
 fi
 if chk_flag --uninstall $@ ; then
     warn=false
-    if [[ $(echo $system_names | tr -cd , | wc -c) > 1 ]]; then
-        warning "Attenting to uninstall on multiple hosts!"
+    if [[ $(echo "$system_names" | tr -cd , | wc -c) > 1 ]]; then
+        warning "Attempting to uninstall on multiple hosts!"
         warn=true
     elif [[ $system_names != "localhost," ]]; then
         warning "Attempting to uninstall on non-localhost!"
         warn=true
     fi
     if [[ $warn == true ]]; then
-        if ! yesno "Are you sure you want to procede?" n; then
+        if ! yesno "Are you sure you want to proceed?" n; then
             exit
         fi
     fi
@@ -223,24 +223,24 @@ elif chk_flag --payload $@ ; then
     title "Setting the Payload Serial"
     text_color "This unique payload serial should distinguish the payload a computer is on."
     text_color "If two computers are in the same payload then this should be the same for them."
-    PAYLOAD_SERIAL=$(read_text "Payload Serial:" $PAYLOAD_SERIAL)
+    PAYLOAD_SERIAL=$(read_text "Payload Serial:" "$PAYLOAD_SERIAL")
 
     PAYLOAD_TYPE="javis_v3"
     echo
     title "Setting the Payload Type"
     text_color "The payload type should uniquely identify the hardware"
     text_color "capability of the payload this computer is in."
-    PAYLOAD_TYPE=$(read_text "Payload Type:" $PAYLOAD_TYPE)
+    PAYLOAD_TYPE=$(read_text "Payload Type:" "$PAYLOAD_TYPE")
 
     run_book setup_payload "payload_type=$PAYLOAD_TYPE payload_serial=$PAYLOAD_SERIAL"
 elif chk_flag --global $@ ; then
     warn=false
-    if [[ $(echo $system_names | tr -cd , | wc -c) > 1 ]]; then
-        warning "Attenting to install globally on multiple hosts!"
+    if [[ $(echo "$system_names" | tr -cd , | wc -c) > 1 ]]; then
+        warning "Attempting to install globally on multiple hosts!"
         warn=true
     fi
     if [[ $warn == true ]]; then
-        if ! yesno "Are you sure you want to procede?" n; then
+        if ! yesno "Are you sure you want to proceed?" n; then
             exit
         fi
     fi
@@ -259,12 +259,12 @@ elif chk_flag --global $@ ; then
             text_color "Be careful when setting this, the ID must be ${FG_YELLOW}unique${FG_COLOR_TEXT}, contain ${FG_YELLOW}only${FG_COLOR_TEXT}"
             text_color "${FG_YELLOW}alphanumeric${FG_COLOR_TEXT} characters, ${FG_YELLOW}forward slashes${FG_COLOR_TEXT} and ${FG_YELLOW}underscores${FG_COLOR_TEXT}"
             echo
-            SYSTEM_ID=$(read_text "JAVIS System ID:" $def_system_id)
+            SYSTEM_ID=$(read_text "JAVIS System ID:" "$def_system_id")
 
             SAN_SYS_ID=${SYSTEM_ID// /_}
             SAN_SYS_ID=${SAN_SYS_ID//-/_}
             SAN_SYS_ID=${SAN_SYS_ID//[^a-zA-Z0-9_]/}
-            if [ $SAN_SYS_ID != $SYSTEM_ID ]; then
+            if [ "$SAN_SYS_ID" != "$SYSTEM_ID" ]; then
                 echo
                 error "Selected System ID [$SYSTEM_ID] was not ROS-safe."
                 text_color "We have sanitized it and will use the System ID [$SAN_SYS_ID]"
@@ -292,11 +292,11 @@ elif chk_flag --global $@ ; then
             text_color "Valid options: "
             text_color "     basestation           (unless you are a payload, you want this)"
             text_color "     rc                    (a mobile platform controlled by the payload)"
-            text_color "     spot                  (an javis payload mounted on spot)"
+            text_color "     spot                  (a javis payload mounted on spot)"
             text_color "     mapping               (a lonely javis payload not mounted on anything)"
             SYSTEM_TYPE=$(read_text "JAVIS System Type:" basestation)
 
-            if [ $SYSTEM_TYPE == "basestation" ] || [ $SYSTEM_TYPE == "rc" ] || [ $SYSTEM_TYPE == "spot" ] || [ $SYSTEM_TYPE == "mapping" ]; then
+            if [ "$SYSTEM_TYPE" == "basestation" ] || [ "$SYSTEM_TYPE" == "rc" ] || [ "$SYSTEM_TYPE" == "spot" ] || [ "$SYSTEM_TYPE" == "mapping" ]; then
                 set_correctly=true
             else
                 error "Invalid system type."
@@ -317,7 +317,7 @@ elif chk_flag --global $@ ; then
         text_color "     dev                   (any development computer, choose this!)"
         SYSTEM_COMPONENT=$(read_text "JAVIS System Component:" dev)
 
-        if [ $SYSTEM_COMPONENT == "orin" ] || [ $SYSTEM_COMPONENT == "dev" ]; then
+        if [ "$SYSTEM_COMPONENT" == "orin" ] || [ "$SYSTEM_COMPONENT" == "dev" ]; then
             set_correctly=true
         else
             error "Invalid system type, defaulting to 'dev'."

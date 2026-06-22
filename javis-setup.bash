@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-eval "$(cat $__dir/operations/javis_utils/scripts/header.sh)"
-eval "$(cat $__dir/operations/javis_utils/scripts/formatters.sh)"
+eval "$(cat "$__dir/operations/javis_utils/scripts/header.sh")"
+eval "$(cat "$__dir/operations/javis_utils/scripts/formatters.sh")"
 
 FILENAME=$__file_name
 # Global install message
@@ -28,7 +28,7 @@ export JAVIS_GLOBAL_CONF=/etc/javis/javis.conf
 # == JAVIS Configuration ==
 # -- General Paths --
 # NOTE TO MAINTAINER - be careful to make sure these align with ansible
-export JAVIS_PATH=$(realpath $__dir)
+export JAVIS_PATH=$(realpath "$__dir")
 export JAVIS_SRC_PATH=$JAVIS_PATH/src
 export JAVIS_OPERATIONS=$JAVIS_PATH/operations
 export JAVIS_DOCKER_PATH=$JAVIS_PATH/operations/javis_docker
@@ -68,27 +68,27 @@ alias javis-export="source javis-export-ros"
 alias dump-frames="python2 /opt/ros/melodic/lib/tf/view_frames"
 
 # -- Append to PATH --
-pathadd $JAVIS_PATH
-pathadd $JAVIS_DOCKER_SCRIPTS
-pathadd $JAVIS_ANSIBLE_SCRIPTS
-pathadd $DEPLOYER_SCRIPTS
-pathadd $JAVIS_UTILS_SCRIPTS
+pathadd "$JAVIS_PATH"
+pathadd "$JAVIS_DOCKER_SCRIPTS"
+pathadd "$JAVIS_ANSIBLE_SCRIPTS"
+pathadd "$DEPLOYER_SCRIPTS"
+pathadd "$JAVIS_UTILS_SCRIPTS"
 
 ###############################################################################
 # Check if things are installed / give warnings if they are not
 ###############################################################################
 function run_checks() {
-    if [ -e $HOME/.javis/auto ]; then
-        echo "source $JAVIS_PATH/$FILENAME" > $HOME/$DEPLOYER_BASHRC_FILEPATH
+    if [ -e "$HOME/.javis/auto" ]; then
+        echo "source $JAVIS_PATH/$FILENAME" > "$HOME/$DEPLOYER_BASHRC_FILEPATH"
 
-        mkdir -p $DEPLOYER_EXPORT_FILEPATH
+        mkdir -p "$DEPLOYER_EXPORT_FILEPATH"
 
-        if [ ! -e $DEPLOYER_EXPORT_FILEPATH/deployer.cmpl ] || [ ! -e /tmp/javis_deployer_genned ]; then
+        if [ ! -e "$DEPLOYER_EXPORT_FILEPATH/deployer.cmpl" ] || [ ! -e /tmp/javis_deployer_genned ]; then
             if command_exists deployer; then
                 touch /tmp/javis_deployer_genned
-                cd $DEPLOYER_PATH
+                cd "$DEPLOYER_PATH"
                 deployer -a --export deployer -f .javis
-                cd $__call_dir
+                cd "$__call_dir"
             fi
         fi
     else
@@ -97,8 +97,8 @@ function run_checks() {
         echo
     fi
 
-    if [ -e $JAVIS_DEPLOY_CONF ]; then
-        source $JAVIS_DEPLOY_CONF > /dev/null || echo "source failed :(" > /dev/null
+    if [ -e "$JAVIS_DEPLOY_CONF" ]; then
+        source "$JAVIS_DEPLOY_CONF" > /dev/null || echo "source failed :(" > /dev/null
     else
         echo "WARN: Deploy configuration not found, please run 'javis install'"
         echo "      docker might not work correctly"
@@ -117,14 +117,14 @@ function run_checks() {
     fi
 
 
-    if [ -e $JAVIS_INSTALL_CONF ]; then
-        source $JAVIS_INSTALL_CONF
+    if [ -e "$JAVIS_INSTALL_CONF" ]; then
+        source "$JAVIS_INSTALL_CONF"
 
         if [ "$INSTALL_JAVIS_MAJOR_EPOCH" != "$JAVIS_MAJOR_EPOCH" ]; then
             echo "Script version $JAVIS_MAJOR_EPOCH.$JAVIS_MAJOR_VERSION.$JAVIS_MINOR_VERSION"
             echo "Installed version $INSTALL_JAVIS_MAJOR_EPOCH.$INSTALL_JAVIS_MAJOR_VERSION.$INSTALL_JAVIS_MINOR_VERSION"
             echo "Running 'javis install' recommended"
-        elif [ $INSTALL_JAVIS_MAJOR_VERSION != $JAVIS_MAJOR_VERSION ]; then
+        elif [ "$INSTALL_JAVIS_MAJOR_VERSION" != "$JAVIS_MAJOR_VERSION" ]; then
             echo "Script version $JAVIS_MAJOR_EPOCH.$JAVIS_MAJOR_VERSION.$JAVIS_MINOR_VERSION"
             echo "Installed version $INSTALL_JAVIS_MAJOR_EPOCH.$INSTALL_JAVIS_MAJOR_VERSION.$INSTALL_JAVIS_MINOR_VERSION"
             echo "Running 'javis install --min' recommended"
@@ -134,7 +134,7 @@ function run_checks() {
         echo "      unable to check install version to determine if install is needed"
     fi
 
-    if command_exists nvidia-smi && [ -z $JAVIS_DISABLE_GPU_CHECK ]; then
+    if command_exists nvidia-smi && [ -z "$JAVIS_DISABLE_GPU_CHECK" ]; then
         if [[ $JAVIS_HOST_TYPE == *"non-gpu" ]]; then
             echo "WARN: GPU Detected but host type does not have a GPU? You might need to run 'javis install --global'"
             echo
@@ -142,8 +142,8 @@ function run_checks() {
         fi
     fi
 
-    if [ -e $JAVIS_GLOBAL_CONF ]; then
-        source $JAVIS_GLOBAL_CONF
+    if [ -e "$JAVIS_GLOBAL_CONF" ]; then
+        source "$JAVIS_GLOBAL_CONF"
         if [[ $JAVIS_INSTALL_GLOBAL_VERSION != $JAVIS_GLOBAL_VERSION ]]; then
             echo "Script global version $JAVIS_GLOBAL_VERSION"
             echo "Installed global version $JAVIS_INSTALL_GLOBAL_VERSION"
@@ -158,26 +158,26 @@ function run_checks() {
 ###############################################################################
 function create_desktop_icons {
     # remove previous desktop icons
-    python $JAVIS_OPERATIONS/javis_utils/scripts/generate_desktop_icons.py --yaml $JAVIS_OPERATIONS/javis_deploy/desktop_icons/.templates/config.yaml --clean
+    python "$JAVIS_OPERATIONS/javis_utils/scripts/generate_desktop_icons.py" --yaml "$JAVIS_OPERATIONS/javis_deploy/desktop_icons/.templates/config.yaml" --clean
     # create new desktop icons
-    python $JAVIS_OPERATIONS/javis_utils/scripts/generate_desktop_icons.py --yaml $JAVIS_OPERATIONS/javis_deploy/desktop_icons/.templates/config.yaml
+    python "$JAVIS_OPERATIONS/javis_utils/scripts/generate_desktop_icons.py" --yaml "$JAVIS_OPERATIONS/javis_deploy/desktop_icons/.templates/config.yaml"
 }
 
 function install_config {
-    mkdir -p ~/.javis
+    mkdir -p "$HOME/.javis/auto"
 
     echo "Creating config...."
-    sudo /bin/bash -c "echo \"source $JAVIS_PATH/$FILENAME\" > $HOME/$DEPLOYER_BASHRC_FILEPATH"
+    echo "source \"$JAVIS_PATH/$FILENAME\"" > "$HOME/$DEPLOYER_BASHRC_FILEPATH"
 
-    sed -i "/JAVIS SOURCE REDIRECT/d" ~/.bashrc
-    echo "source \"$HOME/$DEPLOYER_BASHRC_FILEPATH\" # JAVIS SOURCE REDIRECT" >> ~/.bashrc
-    echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/usr/lib/aarch64-linux-gnu/tegra" >> ~/.bashrc
-    cat ~/.bashrc
+    sed -i "/JAVIS SOURCE REDIRECT/d" "$HOME/.bashrc"
+    echo "source \"$HOME/$DEPLOYER_BASHRC_FILEPATH\" # JAVIS SOURCE REDIRECT" >> "$HOME/.bashrc"
+    echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/usr/lib/aarch64-linux-gnu/tegra" >> "$HOME/.bashrc"
+    cat "$HOME/.bashrc"
 }
 
 function install_py_scripts {
-    if [ -e $JAVIS_OPERATIONS/javis_utils/host_info_tools/src ]; then
-        cd $JAVIS_OPERATIONS/javis_utils/host_info_tools
+    if [ -e "$JAVIS_OPERATIONS/javis_utils/host_info_tools/src" ]; then
+        cd "$JAVIS_OPERATIONS/javis_utils/host_info_tools"
         sudo -H python3 -m pip install .
         sudo git clean -xfd 2> /dev/null
     else
@@ -185,22 +185,22 @@ function install_py_scripts {
     fi
 
     # clone all operation submodules
-    if [ ! -e $DEPLOYER_SCRIPTS ]; then
+    if [ ! -e "$DEPLOYER_SCRIPTS" ]; then
         echo "WARN: deployer bin directory does not exist, please clone operations submodules."
         return
     fi
 
     # install python scripts
-    cd $DEPLOYER_PATH
+    cd "$DEPLOYER_PATH"
     python setup.py install --user
     # validate python installed deployer
     if last_command_failed; then
-        "deploy builder install failed."
-        cd $__call_dir
+        echo "deploy builder install failed."
+        cd "$__call_dir"
         exit 1
     fi
     git clean -f -d
-    cd $__call_dir
+    cd "$__call_dir"
 
     echo "finished"
 }
@@ -238,11 +238,11 @@ if [[ $# > 0 ]]; then
 fi
 
 
-source $JAVIS_PATH/operations/.version.env
-if [ -z $JAVIS_SETUP_SUPPRESS_CHECKS ]; then
+source "$JAVIS_PATH/operations/.version.env"
+if [ -z "$JAVIS_SETUP_SUPPRESS_CHECKS" ]; then
     run_checks
-elif [ -e $JAVIS_DEPLOY_CONF ]; then
-    source $JAVIS_DEPLOY_CONF
+elif [ -e "$JAVIS_DEPLOY_CONF" ]; then
+    source "$JAVIS_DEPLOY_CONF"
 fi
 # If we are sourcing, source all the automation tools
-source $JAVIS_PATH/operations/javis_deploy/automate/javis
+source "$JAVIS_PATH/operations/javis_deploy/automate/javis"
