@@ -7,8 +7,7 @@
 ARG JAVIS_ROS_DISTRO=$JAVIS_ROS_DISTRO
 ARG ARCH_T=$ARCH_T
 ARG DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION
-#FROM dustynv/whisper_trt:r36.3.0
-From dustynv/wyoming-whisper:2.3.0-r36.4.0
+FROM dustynv/whisper_trt:r36.3.0
 # for ros2
 RUN apt update
 
@@ -224,13 +223,42 @@ RUN sudo apt-get install -y --no-install-recommends \
 RUN sudo apt install portaudio19-dev python3-pyaudio -y
 RUN pip3 install socketio uvicorn cv_bridge opencv-python starlette sounddevice openwakeword==0.5.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
 
+RUN sudo apt install -y ffmpeg libavdevice-dev libavfilter-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev portaudio19-dev alsa-utils libpcap0.8-dev
+RUN sudo apt install -y python3-dev python3-pip python3-setuptools i2c-tools libgpiod2
+
+RUN pip3 install pybind11 sentence-transformers faiss-cpu av -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip3 install rapidfuzz pypinyin faster-whisper setuptools==67.2.0 wheel numpy==1.26.4 scipy==1.11.4 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+RUN pip3 install Jetson.GPIO transforms3d transformers==4.45.2 sentence-transformers==5.1.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip3 install soundfile openai -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+
+
+RUN cd /home/developer \
+ && git clone --recursive https://github.com/OpenNMT/CTranslate2.git \
+ && cd CTranslate2 \
+ && mkdir build && cd build && cmake -DWITH_CUDA=ON -DWITH_CUDNN=ON -DWITH_MKL=OFF -DCMAKE_BUILD_TYPE=Release .. \
+ && make -j8 && sudo make install \
+ && cd /home/developer/CTranslate2/python \
+ && pip3 install . --no-build-isolation
+
+
+RUN sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
+
+RUN sudo groupadd -f dialout \
+ && sudo groupadd -f tty \
+ && sudo groupadd -f video \
+ && sudo groupadd -f audio \
+ && sudo groupadd -f i2c \
+ && sudo groupadd -f -r gpio \
+ && sudo usermod -aG dialout,tty,video,audio,i2c,gpio developer
+
 RUN sudo usermod -a -G dialout developer \
  && sudo usermod -a -G tty developer \
  && sudo usermod -a -G video developer \
  && sudo usermod -a -G root developer \
  && sudo usermod -a -G audio developer \
  && sudo usermod -aG i2c developer \
- && sudo groupadd -f -r gpio \
  && sudo usermod -a -G gpio developer
 
 ENV TRANSFORMERS_CACHE=/home/developer/model_data/models/huggingface \
@@ -238,3 +266,9 @@ ENV TRANSFORMERS_CACHE=/home/developer/model_data/models/huggingface \
     HF_HOME=/home/developer/model_data/models/huggingface
 
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+
+RUN pip3 install opencc==1.1.9 faster-whisper adafruit-blinka adafruit-circuitpython-ads1x15 -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN sudo apt update
+RUN sudo apt install -y ros-humble-tf-transformations fonts-noto-cjk fonts-noto-cjk-extra fonts-noto-color-emoji fonts-wqy-zenhei fonts-wqy-microhei
+RUN sudo apt install -y pulseaudio-utils
+RUN sudo apt update && sudo apt install -y ros-humble-diagnostic-updater ros-humble-pcl-ros

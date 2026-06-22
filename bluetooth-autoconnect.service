@@ -1,13 +1,17 @@
 [Unit]
-Description=Auto-connect trusted Bluetooth devices (e.g., Xbox)
+Description=Auto-connect Bluetooth microphone
 After=bluetooth.target
 Requires=bluetooth.service
 
 [Service]
-Type=oneshot
-ExecStart=/usr/bin/bash /home/jiahe/auto_connect_bt.sh
-Restart=on-failure
-RestartSec=10
+Type=simple
+User=developer
+Group=developer
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+ExecStart=/usr/bin/bash /home/developer/javis_ws/auto_connect_bt.sh
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

@@ -10,10 +10,10 @@ environment:
   DISPLAY: ":0"
   QT_X11_NO_MITSHM: "1"
 # starting directory location, to run all commands from
-start_directory: $JAVIS_PATH/
+start_directory: /home/developer/javis_ws/
 
 # commands to run before panes startup
-before_script: $JAVIS_OPERATIONS/javis_utils/scripts/tmux_bootstrap.bash -sp -ar -st -- javis_whipser javis_llm
+before_script: /home/developer/javis_ws/operations/javis_utils/scripts/tmux_bootstrap.bash -sp -ar -st -- javis_whipser
 
 # This is where we list all the stuff we want to run
 windows:
@@ -24,38 +24,43 @@ windows:
   #     - shell_command:
   #       - echo "passme24" | sudo -S ip route replace default via 192.168.1.1 dev eth0
 
-  # - window_name: GPS
-  #   focus: false
-  #   layout: main-horizontal
-  #   panes:
-  #     - shell_command:
-  #       - docker-join.bash -n javis_whisper
-  #       - source /home/developer/.bashrc
-  #       - source /home/developer/javis/install/setup.bash
-  #       - cd /home/developer/javis_ws/src/gps_driver_ros2
-  #       - python3 gps_node.py
-
-  # - window_name: ODOM
-  #   focus: false
-  #   layout: main-horizontal
-  #   panes:
-  #     - shell_command:
-  #       - docker-join.bash -n javis_whisper
-  #       - source /home/developer/.bashrc
-  #       - source /home/developer/javis/install/setup.bash
-  #       - cd /home/developer/javis_ws/src/gps_driver_ros2
-  #       - python3 gps_to_odom_node.py
-
-  - window_name: GPS_ODOM
+  - window_name: GPS
     focus: false
     layout: main-horizontal
     panes:
       - shell_command:
         - docker-join.bash -n javis_whisper
         - source /home/developer/.bashrc
-        - source /home/developer/javis/install/setup.bash
+        - source /home/developer/javis_ws/install/setup.bash
         - cd /home/developer/javis_ws/src/gps_driver_ros2
-        - python3 gps_driver_with_odom.py
+        - |
+          while true; do
+            echo "🚀 Starting GPS driver..."
+            python3 /home/developer/javis_ws/src/gps_driver_ros2/gps_node.py
+            echo "❌ gps driver crashed — restarting in 2 seconds..."
+            sleep 2
+          done
+  - window_name: ODOM
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_whisper
+        - source /home/developer/.bashrc
+        - source /home/developer/javis_ws/install/setup.bash
+        - cd /home/developer/javis_ws/src/gps_driver_ros2
+        - python3 /home/developer/javis_ws/src/gps_driver_ros2/gps_to_odom_node.py
+
+  # - window_name: GPS_ODOM
+  #   focus: false
+  #   layout: main-horizontal
+  #   panes:
+  #     - shell_command:
+  #       - docker-join.bash -n javis_whisper
+  #       - source /home/developer/.bashrc
+  #       - source /home/developer/javis/install/setup.bash
+  #       - cd /home/developer/javis_ws/src/gps_driver_ros2
+  #       - python3 gps_driver_with_odom.py
   # - window_name: DEBUG_vel
   #   focus: true
   #   layout: main-horizontal
@@ -83,13 +88,13 @@ windows:
       - shell_command:
         - docker-join.bash -n javis_whisper
         - source /home/developer/.bashrc
-        - source /home/developer/javis/install/setup.bash
         - source /home/developer/javis_ws/install/setup.bash
         - source /opt/ros/humble/setup.bash
         - source ~/javis_ws/install/setup.bash
         - cd ~/javis_ws
         - |
           while true; do
+            sleep 3
             echo "🚀 Starting LSLiDAR driver..."
             ros2 launch lslidar_driver lsn10p_launch.py
             echo "❌ LSLiDAR driver crashed — restarting in 3 seconds..."
@@ -102,14 +107,19 @@ windows:
     layout: main-horizontal
     panes:
       - shell_command:
-          - export ROS_DOMAIN_ID=10
-          - |
-            while true; do
-              echo '🚀 Starting Local Joystick Node...'
-              python3 /home/jiahe/javis_ws/src/custom_joystick/custom_joystick.py
-              echo '❌ Joystick crashed — restarting in 3 seconds...'
-              sleep 3
-            done
+        - docker-join.bash -n javis_whisper
+        - source /home/developer/.bashrc
+        - source /home/developer/javis_ws/install/setup.bash
+        - source /opt/ros/humble/setup.bash
+        - source ~/javis_ws/install/setup.bash
+        #- export ROS_DOMAIN_ID=10
+        - |
+          while true; do
+            echo '🚀 Starting Local Joystick Node...'
+            python3 /home/developer/javis_ws/src/custom_joystick/custom_joystick.py
+            echo '❌ Joystick crashed — restarting in 3 seconds...'
+            sleep 3
+          done
 
   - window_name: UI
     focus: false
@@ -118,17 +128,17 @@ windows:
       - shell_command:
           - docker-join.bash -n javis_whisper
           - source /opt/ros/humble/setup.bash
-          - export ROS_DOMAIN_ID=10
+          - source /home/developer/javis_ws/install/setup.bash
+          #- export ROS_DOMAIN_ID=10
           - cd /home/developer/javis_ws/src/robot_ui
           - |
             while true; do
+              sleep 6
               echo "🚀 Starting UI..."
               python3 /home/developer/javis_ws/src/robot_ui/robot_ui.py
               echo "❌ UI node crashed or stopped — restarting in 3 seconds..."
               sleep 3
             done
-
-
 
   - window_name: rosbag
     focus: false
@@ -149,10 +159,31 @@ windows:
       - shell_command:
         - docker-join.bash -n javis_whisper
         - source /home/developer/.bashrc
-        - source /home/developer/javis/install/setup.bash
-        - ros2 launch global_planner launch.xml
-        # - cd /home/developer/javis_ws/src/local_planner
-        # - python3 fake_inputs.py
+        - source /home/developer/javis_ws/install/setup.bash
+        - cd /home/developer/javis_ws/src/global_planner/global_planner
+        - |
+          while true; do
+            echo "🚀 Starting global planner..."
+            python3 /home/developer/javis_ws/src/global_planner/global_planner/global_planner.py
+            echo "❌ global planner node crashed or stopped — restarting in 3 seconds..."
+            sleep 3
+          done
+  - window_name: far_planner
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_whisper
+        - source /home/developer/.bashrc
+        - source /home/developer/javis_ws/install/setup.bash
+        - cd /home/developer/javis_ws/src/global_planner/global_planner
+        - |
+          while true; do
+            echo "🚀 Starting far planner..."
+            python3 /home/developer/javis_ws/src/global_planner/global_planner/far_planner.py
+            echo "❌ far planner node crashed or stopped — restarting in 3 seconds..."
+            sleep 3
+          done
 
   - window_name: local_planner
     focus: false
@@ -175,7 +206,7 @@ windows:
         - cd /home/developer/javis_ws/stream_tts
         - python3 HeartbeatReceiver.py
 
-  - window_name: INPUT_OUTPUT_FILTER
+  - window_name: INPUT_FILTER
     focus: false
     layout: main-horizontal
     panes:
@@ -183,8 +214,31 @@ windows:
         - docker-join.bash -n javis_whisper
         - source /home/developer/.bashrc
         - source /home/developer/javis_ws/install/setup.bash
-        - ros2 launch input_output_filter launch.xml
-  
+        - cd /home/developer/javis_ws/src/input_output_filter/input_output_filter
+        - |
+          while true; do
+            echo "🚀 Starting input filter..."
+            python3 /home/developer/javis_ws/src/input_output_filter/input_output_filter/input_filter.py
+            echo "❌ input filter node crashed or stopped — restarting in 3 seconds..."
+            sleep 3
+          done
+  - window_name: OUTPUT_FILTER
+    focus: false
+    layout: main-horizontal
+    panes:
+      - shell_command:
+        - docker-join.bash -n javis_whisper
+        - source /home/developer/.bashrc
+        - source /home/developer/javis_ws/install/setup.bash
+        - cd /home/developer/javis_ws/src/input_output_filter/input_output_filter
+        - |
+          while true; do
+            echo "🚀 Starting output filter..."
+            python3 /home/developer/javis_ws/src/input_output_filter/input_output_filter/output_filter.py
+            echo "❌ output filter node crashed or stopped — restarting in 3 seconds..."
+            sleep 3
+          done
+
   - window_name: LLM
     focus: false
     layout: main-horizontal
@@ -193,9 +247,15 @@ windows:
         - docker-join.bash -n javis_whisper
         - source /home/developer/.bashrc
         - source /home/developer/javis_ws/install/setup.bash
-        - cd /home/developer/javis_ws/src/llm_server/llm_server
-        - python3 server.py
-
+        - cd /home/developer/javis_ws/src/llm_server/llm_server/
+        - |
+          while true; do
+            echo "🚀 Starting LLM node..."
+            cd /home/developer/javis_ws/src/llm_server/llm_server/
+            python3 server.py
+            echo "❌ LLM node crashed or stopped — restarting in 3 seconds..."
+            sleep 3
+          done
 
   - window_name: ASR
     focus: false
@@ -205,8 +265,14 @@ windows:
         - docker-join.bash -n javis_whisper
         - source /home/developer/.bashrc
         - source /home/developer/javis_ws/install/setup.bash
-        - cd /home/developer/javis_ws/src/asr/asr
-        - python3 stream_vad_ros2.py
+        - |
+          while true; do
+            echo "🚀 Starting asr filter..."
+            python3 /home/developer/javis_ws/src/asr/asr/stream_vad_ros2.py
+            echo "❌ asr node crashed or stopped — restarting in 3 seconds..."
+            sleep 3
+          done
+
 
   - window_name: BH
     focus: false
@@ -216,8 +282,13 @@ windows:
         - docker-join.bash -n javis_whisper
         - source /home/developer/.bashrc
         - source /home/developer/javis_ws/install/setup.bash
-        - cd /home/developer/javis_ws/src/lite3_udp_ros2_driver/lite3_udp_ros2_driver
-        - python3 behavior_controller.py
+        - |
+          while true; do
+            echo "🚀 behavior controller filter..."
+            python3 /home/developer/javis_ws/src/lite3_udp_ros2_driver/lite3_udp_ros2_driver/behavior_controller.py
+            echo "❌ behavior contoller node crashed or stopped — restarting in 3 seconds..."
+            sleep 3
+          done
 
   - window_name: Lite3
     focus: false
@@ -226,16 +297,19 @@ windows:
       - shell_command:
         - docker-join.bash -n javis_whisper
         # - sudo sysctl -w net.core.rmem_max=26214400
-        - sleep(3.0)
+        - sleep 9
         - source /home/developer/.bashrc
         - source /home/developer/javis_ws/install/setup.bash
-        - cd /home/developer/javis_ws/src/lite3_udp_ros2_driver/lite3_udp_ros2_driver
-        - python3 motion_server.py
-
+        - |
+          while true; do
+            echo "🚀 motion server filter..."
+            python3 /home/developer/javis_ws/src/lite3_udp_ros2_driver/lite3_udp_ros2_driver/motion_server.py
+            echo "❌ motion_server node crashed or stopped — restarting in 3 seconds..."
+            sleep 3
+          done
   - window_name: TTS
     focus: false
     layout: main-horizontal
     panes:
       - shell_command:
         - docker run --rm --runtime nvidia -it -v ${HOME}/model_data:/home/developer/model_data -v ${HOME}/javis_ws:/home/developer/javis_ws --network=host dustynv/kokoro-tts:fastapi-r36.4.0
-

@@ -1,8 +1,110 @@
 -i https://pypi.tuna.tsinghua.edu.cn/simple
 
+ 1937  sudo systemctl disable systemd-networkd-wait-online.service
+ 1938  sudo systemctl mask systemd-networkd-wait-online.service
+ 1939  sudo reboot now
+
+
 sudo apt install dkms git build-essential -y
 git clone https://github.com/medusalix/xone.git
 cd xone
 sudo ./install.sh
 
 sudo ip route replace default via 192.168.1.1 dev eth0
+
+pip3 install funasr -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+python3 -m pip install --user openwakeword==0.5.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+
+pip3 install openwakeword==0.5.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+pip3 install numpy==1.24.4 scipy==1.8.0 opencc -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+
+docker run --runtime nvidia -it -v ${HOME}/model_data:/home/developer/model_data -v ${HOME}/javis_ws:/home/developer/javis_ws --network=host dustynv/kokoro-tts:fastapi-r36.4.0
+
+rosdep install -y --from-paths . --ignore-src --rosdistro ${ROS_DISTRO}
+
+
+sudo ip route replace default via 192.168.1.10
+
+
+# 1) Reconnect manually
+bluetoothctl connect C5:23:67:15:F6:25
+
+# 2) Check connection state
+bluetoothctl info C5:23:67:15:F6:25 | grep -E "Connected|UUID|Name"
+
+# 3) List BT card + active profile (using grep, not rg)
+pactl list cards | grep -nE "bluez|Active Profile|headset|handsfree|a2dp"
+
+
+sudo apt update
+sudo apt install -y pulseaudio-module-bluetooth ofono
+
+sudo rm -f /etc/resolv.conf
+sudo ln -s /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+sudo systemctl restart systemd-resolved
+
+
+# 1) confirm IP connectivity (no DNS)
+ping -c 3 8.8.8.8
+
+# 2) inspect resolver state
+resolvectl status
+cat /etc/resolv.conf
+
+# 3) restart resolver + network
+sudo systemctl restart systemd-resolved
+sudo systemctl restart NetworkManager
+
+# 4) set DNS on active interface
+sudo resolvectl dns enP8p1s0 1.1.1.1 8.8.8.8
+sudo resolvectl domain enP8p1s0 "~."
+
+# 5) verify and test name resolution
+resolvectl status | grep -A3 enP8p1s0
+resolvectl query ports.ubuntu.com
+ping -c 3 ports.ubuntu.com
+
+
+
+
+
+
+
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+export PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native
+
+systemctl --user daemon-reload
+systemctl --user start pipewire pipewire-pulse wireplumber
+systemctl --user status pipewire pipewire-pulse wireplumber --no-pager
+
+
+   12  cd javis_ws/src/asr/asr
+   13  pactl get-default-source
+   14  clear
+   15  python3 test_bt_audio_input.py 
+   16  pactl get-default-source
+   17  SRC="$(pactl get-default-source)"
+   18  parec -d "$SRC" --rate=16000 --channels=1 --format=s16le --latency-msec=20 --raw > /tmp/bt.raw &
+   19  PID=$!
+   20  sleep 5
+   21  kill $PID
+   22  ffmpeg -f s16le -ar 16000 -ac 1 -i /tmp/bt.raw /tmp/bt.wav -y
+   23  ls
+   24  scp /tmp/bt.raw developer@192.168.1.102:/home/developer
+   25  scp /tmp/bt.raw developer@192.168.1.110:/home/developer
+   26  SRC="$(pactl get-default-source)"
+   27  parec -d "$SRC" --rate=16000 --channels=1 --format=s16le --latency-msec=20 --file-format=wav > bt_test.wav
+   28  ls
+   29  scp ./bt_test.wav developer@192.168.1.110:/home/developer
+   30  cd
+   31  nano .bashrc
+   32  source .bashrc
+   33  id
+   34  python3 custom_joystick.py 
+   35  history
+
+

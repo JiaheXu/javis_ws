@@ -1,0 +1,29 @@
+[Unit]
+Description=Javis stack launcher (tmuxp)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=developer
+WorkingDirectory=/home/developer
+
+# Make sure tmuxp is found even if systemd doesn't load your interactive shell env
+Environment=HOME=/home/developer
+Environment=USER=developer
+Environment=PATH=/home/developer/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Use a login shell so your ~/.bashrc / ~/.profile env is available (often needed for ROS/Docker env)
+ExecStart=/usr/bin/bash -lc 'tmuxp load -d /home/developer/javis_ws/operations/javis_deploy/tmux/pino.yaml'
+
+# Reliability
+Restart=on-failure
+RestartSec=2
+TimeoutStartSec=30
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

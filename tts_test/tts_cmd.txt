@@ -1,0 +1,3 @@
+docker run --runtime nvidia -it --rm --network=host -v ${HOME}/model_data:/home/developer/model_data -v /${HOME}/javis_ws:/home/developer/javis_ws dustynv/piper-tts:r36.2.0
+
+docker run --runtime nvidia -it --rm --network=host -v ${HOME}/model_data:/home/developer/model_data -v /${HOME}/javis_ws:/home/developer/javis_ws dustynv/xtts:r36.3.0

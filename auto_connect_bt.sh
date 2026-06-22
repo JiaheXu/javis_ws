@@ -1,15 +1,16 @@
-#!/bin/bash
-# Delay to allow Bluetooth stack to come up
-sleep 6
+#!/usr/bin/env bash
 
-# Your adapter and device addresses
-ADAPTER="CC:47:40:6F:C6:AE"
-DEVICE="EC:83:50:80:4E:B9"
+DEVICE="C5:23:67:15:F6:25"
+#ADAPTER="CC:47:40:6F:C6:AE"
 
-# Ensure the adapter is up
-bluetoothctl <<EOF
-select $ADAPTER
-power on
-connect $DEVICE
-exit
-EOF
+while true; do
+    CONNECTED=$(bluetoothctl info $DEVICE | grep "Connected: yes")
+
+    if [ -z "$CONNECTED" ]; then
+        echo "[BT] reconnecting..."
+        bluetoothctl connect $DEVICE
+    fi
+
+    sleep 20
+done
+

@@ -49,6 +49,7 @@ services:
 
   javis_whisper:
     image: javis/${JAVIS_ARCH_T}.whisper:${DOCKER_IMAGE_VERSION}
+    #image: jiahexu98/pinoai:latest
     build:
       context: ${JAVIS_DOCKER_PATH}/javis/
       dockerfile: ${JAVIS_DOCKER_PATH}/javis/services/whisper.dockerfile
@@ -68,6 +69,8 @@ services:
       - ROS_HOSTNAME=$JAVIS_HOSTNAME
       - JAVIS_USERID=$JAVIS_USERID
       - JAVIS_GROUPID=$JAVIS_GROUPID
+      - XDG_RUNTIME_DIR=/run/user/1000
+      - PULSE_SERVER=unix:/run/user/1000/pulse/native
     volumes:
       - ${JAVIS_PATH}:/home/developer/javis_ws/
       - ${HOME}/model_data:/home/developer/model_data
@@ -75,6 +78,11 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /dev/input:/dev/input
       - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra
+      - /run/user/1000/pulse:/run/user/1000/pulse
+      - /run/user/1000:/run/user/1000
+      - /etc/machine-id:/etc/machine-id:ro
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+
     devices:
       - /dev/nvhost-gpu:/dev/nvhost-gpu
       - /dev/nvhost-ctrl:/dev/nvhost-ctrl
@@ -89,8 +97,22 @@ services:
       - /dev/nvidia-modeset:/dev/nvidia-modeset
       - /dev/video0:/dev/video0
       - /dev/video1:/dev/video1
+      - /dev/i2c-0:/dev/i2c-0
+      - /dev/i2c-1:/dev/i2c-1
+      - /dev/i2c-2:/dev/i2c-2
+      - /dev/i2c-4:/dev/i2c-4
+      - /dev/i2c-5:/dev/i2c-5
+      - /dev/i2c-7:/dev/i2c-7
+      - /dev/i2c-9:/dev/i2c-9
+      - /dev/snd:/dev/snd
+
     group_add:
+      # - "29"   # audio group gid on Ubuntu/Jetson
+      - "116"     # i2c group gid on host (getent group i2c -> 116)
       - video
+    # cap_add:
+    #   - SYS_RAWIO
+    #   - SYS_ADMIN
     network_mode: host
     tty: true
 
