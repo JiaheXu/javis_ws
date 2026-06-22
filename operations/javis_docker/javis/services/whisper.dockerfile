@@ -245,6 +245,9 @@ RUN cd /home/developer \
 
 RUN sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
 
+RUN sudo apt install -y ffmpeg libavdevice-dev libavfilter-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev portaudio19-dev alsa-utils libpcap0.8-dev ros-humble-pcl-ros ros-humble-diagnostic-updater
+
+# python3 -m pip install --user --upgrade pip setuptools==67.2.0 wheel -i https://pypi.tuna.tsinghua.edu.cn/simple
 RUN sudo groupadd -f dialout \
  && sudo groupadd -f tty \
  && sudo groupadd -f video \

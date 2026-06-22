@@ -12,7 +12,9 @@ sudo ./install.sh
 
 sudo ip route replace default via 192.168.1.1 dev eth0
 
+
 pip3 install funasr -i https://pypi.tuna.tsinghua.edu.cn/simple
+
 
 python3 -m pip install --user openwakeword==0.5.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
 
@@ -69,11 +71,6 @@ resolvectl query ports.ubuntu.com
 ping -c 3 ports.ubuntu.com
 
 
-
-
-
-
-
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native
 
@@ -106,5 +103,6 @@ systemctl --user status pipewire pipewire-pulse wireplumber --no-pager
    33  id
    34  python3 custom_joystick.py 
    35  history
+
 
 

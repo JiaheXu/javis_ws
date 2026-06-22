@@ -148,7 +148,7 @@ windows:
         - docker-join.bash -n javis_whisper
         - source /home/developer/.bashrc
         - cd ~/javis_ws/save_data
-        # - python3 save_data.py
+        - python3 save_data.py
         # - cd ~/javis_ws/save_data/1021
         # - bash play_bags.sh
 
@@ -297,7 +297,8 @@ windows:
       - shell_command:
         - docker-join.bash -n javis_whisper
         # - sudo sysctl -w net.core.rmem_max=26214400
-        - sleep 9
+        - sleep 3
+
         - source /home/developer/.bashrc
         - source /home/developer/javis_ws/install/setup.bash
         - |
